@@ -1,0 +1,15 @@
+/out/
+/tests/tema1/*.out
+
+/src/cool/lexer/CoolLexer.java
+/src/cool/lexer/CoolLexer.interp
+/src/cool/lexer/CoolLexer.tokens
+
+/src/cool/parser/CoolLexer.tokens
+/src/cool/parser/CoolParser.java
+/src/cool/parser/CoolParser.interp
+/src/cool/parser/CoolParser.tokens
+/src/cool/parser/CoolParserBaseListener.java
+/src/cool/parser/CoolParserBaseVisitor.java
+/src/cool/parser/CoolParserListener.java
+/src/cool/parser/CoolParserVisitor.java
