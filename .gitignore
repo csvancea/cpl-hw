@@ -5,6 +5,7 @@
 /src/cool/lexer/CoolLexer.interp
 /src/cool/lexer/CoolLexer.tokens
 
+/src/cool/parser/CoolLexer.g4
 /src/cool/parser/CoolLexer.tokens
 /src/cool/parser/CoolParser.java
 /src/cool/parser/CoolParser.interp
