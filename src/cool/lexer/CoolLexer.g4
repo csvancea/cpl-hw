@@ -6,7 +6,9 @@ tokens { ERROR }
     package cool.lexer;	
 }
 
-@members{    
+@members{
+    private static final int MAX_STRING_LENGTH = 1024;
+
     private void raiseError(String msg) {
         setText(msg);
         setType(ERROR);
@@ -77,8 +79,34 @@ INT : DIGIT+;
  * Acoladele de la final pot conține secvențe arbitrare de cod Java,
  * care vor fi executate la întâlnirea acestui token.
  */
-STRING : '"' ('\\"' | .)*? '"'
-    { System.out.println("there are no strings in CPLang, but shhh.."); };
+STRING  :   '"'
+            (   '\\"'
+            |   '\\' NEW_LINE
+            |   '\u0000'    { raiseError("String contains null character"); }
+            |   .
+            )*?
+            (   '"'         {
+                                var text = getText();
+
+                                text = text
+                                        .replace("\\n", "\n")
+                                        .replace("\\t", "\t")
+                                        .replace("\\b", "\b")
+                                        .replace("\\f", "\f")
+                                        .replaceAll("\\\\(?!\\\\)", "");
+
+                                text = text
+                                        .substring(1, text.length() - 1);
+
+                                if (text.length() > MAX_STRING_LENGTH) {
+                                    raiseError("String constant too long");
+                                } else if (getType() != ERROR) {
+                                    setText(text);
+                                }
+                            }
+            |   NEW_LINE    { raiseError("Unterminated string constant"); }
+            |   EOF         { raiseError("EOF in string constant"); }
+            );
 
 /* Diferiți tokeni.
  */
