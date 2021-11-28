@@ -151,7 +151,11 @@ LINE_COMMENT
 BLOCK_COMMENT
     : '(*'
       (BLOCK_COMMENT | .)*?
-      ('*)' | EOF { System.err.println("EOF in comment"); }) -> skip
+      ('*)' { skip(); } | EOF { raiseError("EOF in comment"); })
+    ;
+
+BLOCK_COMMENT_UNMATCHED_START
+    : '*)' { raiseError("Unmatched *)"); }
     ;
 
 /* Spații albe.
