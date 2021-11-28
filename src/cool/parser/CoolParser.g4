@@ -34,8 +34,7 @@ caseTest
     ;
 
 expr
-    : name=ID ASSIGN e=expr                                                                                             # assign
-    | instance=expr (AT type=TYPE)? DOT name=ID LPAREN (args+=expr (COMMA args+=expr)*)? RPAREN                         # explicitDispatch
+    : instance=expr (AT type=TYPE)? DOT name=ID LPAREN (args+=expr (COMMA args+=expr)*)? RPAREN                         # explicitDispatch
     | name=ID LPAREN (args+=expr (COMMA args+=expr)*)? RPAREN                                                           # implicitDispatch
     | IF cond=expr THEN thenBranch=expr ELSE elseBranch=expr FI                                                         # if
     | WHILE cond=expr LOOP body=expr POOL                                                                               # while
@@ -50,6 +49,7 @@ expr
     | left=expr op=(LT | LE | EQUAL) right=expr                                                                         # relational
     | NOT e=expr                                                                                                        # not
     | LPAREN e=expr RPAREN                                                                                              # paren
+    | name=ID ASSIGN e=expr                                                                                             # assign
     | ID                                                                                                                # id
     | INT                                                                                                               # int
     | STRING                                                                                                            # string
