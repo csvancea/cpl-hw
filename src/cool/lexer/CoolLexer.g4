@@ -10,9 +10,11 @@ tokens { ERROR }
     private void raiseError(String msg) {
         setText(msg);
         setType(ERROR);
+        buf.setLength(0);
     }
 
     private final StringBuilder buf = new StringBuilder();
+    private static final int MAX_STRING_LENGTH = 1024;
 }
 
 fragment UPPERCASE : [A-Z];
@@ -92,9 +94,22 @@ STRING  :   '"'
                 |   '\\'    { buf.append("\\"); }
                 |   .       { buf.append((char)getInputStream().LA(-1)); }
                 )
-            |   ~('\\' | '"') { buf.append((char)getInputStream().LA(-1)); }
+//            |   EOF { raiseError("EOF in string constant"); }
+            |   ~('\u0000' | '\n' | '\\' | '"')   { buf.append((char)getInputStream().LA(-1)); System.out.println("Str: " + buf.toString()); }
             )*
-            '"' { setText(buf.toString()); buf.setLength(0); }
+            (   '"' {
+                        if (buf.length() > MAX_STRING_LENGTH) {
+                            raiseError("String constant too long");
+                        }
+                        else if (getType() != ERROR) {
+                            setText(buf.toString());
+                        }
+                        buf.setLength(0);
+                    }
+                |   '\u0000'        { raiseError("String contains null character"); }
+                |   '\n'            { raiseError("Unterminated string constant"); }
+                |   EOF             { raiseError("EOF in string constant"); }
+            )
         ;
 
 /* Diferiți tokeni.
