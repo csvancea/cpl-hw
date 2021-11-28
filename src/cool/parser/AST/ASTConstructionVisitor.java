@@ -183,7 +183,7 @@ public class ASTConstructionVisitor extends CoolParserBaseVisitor<ASTNode> {
 
     @Override
     public ASTNode visitAttributeDef(CoolParser.AttributeDefContext ctx) {
-        return visit(ctx);
+        return visit(ctx.variable());
     }
 
     @Override
