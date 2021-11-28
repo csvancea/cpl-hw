@@ -151,7 +151,7 @@ public class ASTConstructionVisitor extends CoolParserBaseVisitor<ASTNode> {
     public ASTNode visitExplicitDispatch(CoolParser.ExplicitDispatchContext ctx) {
         var args = ctx.args.stream().map(x -> (Expression)visit(x)).collect(Collectors.toList());
         return new Dispatch((Expression)visit(ctx.instance),
-                            new Type(ctx.type),
+                            ctx.type == null ? null : new Type(ctx.type),
                             new Id(ctx.name),
                             args,
                             ctx.start);
