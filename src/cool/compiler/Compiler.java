@@ -1,5 +1,7 @@
 package cool.compiler;
 
+import cool.parser.AST.ASTConstructionVisitor;
+import cool.parser.AST.ASTPrinterVisitor;
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.*;
 
@@ -119,7 +121,17 @@ public class Compiler {
             System.err.println("Compilation halted");
             return;
         }
-        
-        // TODO Print tree
+
+        // Visitor-ul de mai jos parcurge arborele de derivare și construiește
+        // un arbore de sintaxă abstractă (AST).
+        var astConstructionVisitor = new ASTConstructionVisitor();
+
+        // ast este AST-ul proaspăt construit pe baza arborelui de derivare.
+        var ast = astConstructionVisitor.visit(globalTree);
+
+        // Visitor-ul de mai jos parcurge AST-ul și afișează în consolă structura programului.
+        var astPrinterVisitor = new ASTPrinterVisitor();
+
+        ast.accept(astPrinterVisitor);
     }
 }
