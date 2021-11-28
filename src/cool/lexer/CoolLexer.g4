@@ -165,3 +165,11 @@ BLOCK_COMMENT_UNMATCHED_START
 WS
     :   [ \n\f\r\t]+ -> skip
     ;
+
+/* Caractere invalide.
+ *
+ * Vor fi acceptate toate caracterele care nu au făcut match mai sus.
+ */
+INVALID
+    :  . { raiseError("Invalid character: " + getText()); }
+    ;
