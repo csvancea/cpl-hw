@@ -39,7 +39,7 @@ expr
     | IF cond=expr THEN thenBranch=expr ELSE elseBranch=expr FI                                                         # if
     | WHILE cond=expr LOOP body=expr POOL                                                                               # while
     | LBRACE (exprs+=expr SEMI)+ RBRACE                                                                                 # block
-    | LET vars+=variable (vars+=variable)* IN body=expr                                                                 # let
+    | LET vars+=variable (COMMA vars+=variable)* IN body=expr                                                           # let
     | CASE instance=expr OF (cases+=caseTest)+ ESAC                                                                     # case
     | NEW type=TYPE                                                                                                     # new
     | ISVOID instance=expr                                                                                              # isVoid
