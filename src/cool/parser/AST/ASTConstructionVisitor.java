@@ -50,7 +50,7 @@ public class ASTConstructionVisitor extends CoolParserBaseVisitor<ASTNode> {
 
     @Override
     public ASTNode visitLet(CoolParser.LetContext ctx) {
-        var vars = ctx.vars.stream().map(x -> (AttributeDef)visit(x)).collect(Collectors.toList());
+        var vars = ctx.vars.stream().map(x -> (LocalDef)visit(x)).collect(Collectors.toList());
         return new Let(vars,
                        (Expression)visit(ctx.body),
                        ctx.start);
@@ -174,16 +174,20 @@ public class ASTConstructionVisitor extends CoolParserBaseVisitor<ASTNode> {
 
     @Override
     public ASTNode visitVariable(CoolParser.VariableContext ctx) {
-        return new AttributeDef(new Type(ctx.type),
-                                new Id(ctx.name),
-                                ctx.init == null ? null : (Expression)visit(ctx.init),
-                                ctx.start
+        return new LocalDef(new Type(ctx.type),
+                            new Id(ctx.name),
+                            ctx.init == null ? null : (Expression)visit(ctx.init),
+                            ctx.start
         );
     }
 
     @Override
     public ASTNode visitAttributeDef(CoolParser.AttributeDefContext ctx) {
-        return visit(ctx.variable());
+        return new AttributeDef(new Type(ctx.type),
+                                new Id(ctx.name),
+                                ctx.init == null ? null : (Expression)visit(ctx.init),
+                                ctx.start
+        );
     }
 
     @Override

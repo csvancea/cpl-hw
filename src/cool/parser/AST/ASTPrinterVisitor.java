@@ -74,6 +74,22 @@ public class ASTPrinterVisitor implements ASTVisitor<Void> {
     }
 
     @Override
+    public Void visit(LocalDef localDef) {
+        print("local");
+
+        indentLevel++;
+
+        localDef.id.accept(this);
+        localDef.type.accept(this);
+        if (localDef.initValue != null) {
+            localDef.initValue.accept(this);
+        }
+
+        indentLevel--;
+        return null;
+    }
+
+    @Override
     public Void visit(Let let) {
         print("let");
 

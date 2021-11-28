@@ -8,6 +8,7 @@ public interface ASTVisitor<T> {
     T visit(If if_);
     T visit(While while_);
     T visit(Block block);
+    T visit(LocalDef localDef);
     T visit(Let let);
     T visit(CaseTest caseTest);
     T visit(Case case_);

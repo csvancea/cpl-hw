@@ -127,12 +127,30 @@ class Block extends Expression {
     }
 }
 
+// Variabilă locală. Inițializarea poate să lipsească.
+class LocalDef extends ASTNode {
+    Type type;
+    Id id;
+    Expression initValue;
+
+    LocalDef(Type type, Id id, Expression initValue, Token token) {
+        super(token);
+        this.type = type;
+        this.id = id;
+        this.initValue = initValue;
+    }
+
+    public <T> T accept(ASTVisitor<T> visitor) {
+        return visitor.visit(this);
+    }
+}
+
 // Construcția let.
 class Let extends Expression {
-    List<AttributeDef> vars;
+    List<LocalDef> vars;
     Expression body;
 
-    Let(List<AttributeDef> vars, Expression body, Token start) {
+    Let(List<LocalDef> vars, Expression body, Token start) {
         super(start);
         this.vars = vars;
         this.body = body;

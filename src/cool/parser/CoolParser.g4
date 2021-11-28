@@ -18,7 +18,7 @@ class_
 
 feature
     : name=ID LPAREN (formals+=formal (COMMA formals+=formal)*)? RPAREN COLON type=TYPE LBRACE body=expr RBRACE         # methodDef
-    | variable                                                                                                          # attributeDef
+    | name=ID COLON type=TYPE (ASSIGN init=expr)?                                                                       # attributeDef
     ;
 
 formal
