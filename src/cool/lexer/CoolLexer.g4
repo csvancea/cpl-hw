@@ -11,6 +11,8 @@ tokens { ERROR }
         setText(msg);
         setType(ERROR);
     }
+
+    private final StringBuilder buf = new StringBuilder();
 }
 
 fragment UPPERCASE : [A-Z];
@@ -76,9 +78,24 @@ INT : DIGIT+;
  *
  * Acoladele de la final pot conține secvențe arbitrare de cod Java,
  * care vor fi executate la întâlnirea acestui token.
+ *
+ * Detalii: https://github.com/tunnelvisionlabs/antlr4/blob/master/doc/faq/lexical.md
  */
-STRING : '"' ('\\"' | .)*? '"'
-    { System.out.println("there are no strings in CPLang, but shhh.."); };
+STRING  :   '"'
+            (   '\\'
+                (   'r'     { buf.append("\r"); }
+                |   'n'     { buf.append("\n"); }
+                |   't'     { buf.append("\t"); }
+                |   'b'     { buf.append("\b"); }
+                |   'f'     { buf.append("\f"); }
+                |   '"'     { buf.append("\""); }
+                |   '\\'    { buf.append("\\"); }
+                |   .       { buf.append((char)getInputStream().LA(-1)); }
+                )
+            |   ~('\\' | '"') { buf.append((char)getInputStream().LA(-1)); }
+            )*
+            '"' { setText(buf.toString()); buf.setLength(0); }
+        ;
 
 /* Diferiți tokeni.
  */
