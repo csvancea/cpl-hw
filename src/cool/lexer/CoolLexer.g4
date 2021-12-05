@@ -1,6 +1,6 @@
 lexer grammar CoolLexer;
 
-tokens { ERROR } 
+tokens { ERROR }
 
 @header{
     package cool.lexer;	

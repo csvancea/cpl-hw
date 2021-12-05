@@ -7,6 +7,7 @@ import org.antlr.v4.runtime.tree.*;
 
 import cool.lexer.*;
 import cool.parser.*;
+import cool.structures.SymbolTable;
 
 import java.io.*;
 
@@ -133,5 +134,15 @@ public class Compiler {
         var astPrinterVisitor = new ASTPrinterVisitor();
 
         ast.accept(astPrinterVisitor);
+
+        // Populate global scope.
+        SymbolTable.defineBasicClasses();
+
+        // TODO Semantic analysis
+
+        if (SymbolTable.hasSemanticErrors()) {
+            System.err.println("Compilation halted");
+            return;
+        }
     }
 }

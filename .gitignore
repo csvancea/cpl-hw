@@ -1,6 +1,6 @@
 /out/
 /src/cool/parser/gen/
-/tests/tema1/*.out
+/tests/**/*.out
 
 /src/cool/lexer/CoolLexer.java
 /src/cool/lexer/CoolLexer.interp
