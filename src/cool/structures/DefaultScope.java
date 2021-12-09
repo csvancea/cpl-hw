@@ -4,9 +4,9 @@ import java.util.*;
 
 public class DefaultScope implements Scope {
     
-    private Map<String, Symbol> symbols = new LinkedHashMap<>();
+    private final Map<String, Symbol> symbols = new LinkedHashMap<>();
     
-    private Scope parent;
+    private final Scope parent;
     
     public DefaultScope(Scope parent) {
         this.parent = parent;

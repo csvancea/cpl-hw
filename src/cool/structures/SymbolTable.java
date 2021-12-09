@@ -2,6 +2,7 @@ package cool.structures;
 
 import java.io.File;
 
+import cool.parser.AST.ASTNode;
 import org.antlr.v4.runtime.*;
 
 import cool.compiler.Compiler;
@@ -39,6 +40,10 @@ public class SymbolTable {
         System.err.println(message);
         
         semanticErrors = true;
+    }
+
+    public static void error(ASTNode info, String str) {
+        error(info.getParserRuleContext(), info.getToken(), str);
     }
     
     public static void error(String str) {
