@@ -10,11 +10,13 @@ public class ASTClassDefinitionPassVisitor extends ASTDefaultVisitor<Void> {
         var classTypeName = classType.getToken().getText();
         if (classTypeName.equals("SELF_TYPE")) {
             SymbolTable.error(classType, "Class has illegal name SELF_TYPE");
+            return null;
         }
 
         var classSymbol = new ClassSymbol(SymbolTable.globals, classTypeName);
         if (!SymbolTable.globals.add(classSymbol)) {
             SymbolTable.error(classType, "Class " + classTypeName + " is redefined");
+            return null;
         }
 
         return null;

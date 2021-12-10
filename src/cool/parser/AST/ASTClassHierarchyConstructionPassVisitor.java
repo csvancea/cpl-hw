@@ -22,12 +22,14 @@ public class ASTClassHierarchyConstructionPassVisitor extends ASTDefaultVisitor<
             parentClassTypeName = parentClassType.getToken().getText();
             if (Arrays.asList("Int", "String", "Bool", "SELF_TYPE").contains(parentClassTypeName)) {
                 SymbolTable.error(parentClassType, "Class " + classTypeName + " has illegal parent " + parentClassTypeName);
+                return null;
             }
         }
 
         var parentClassSymbol = (ClassSymbol)SymbolTable.globals.lookup(parentClassTypeName);
         if (parentClassSymbol == null) {
             SymbolTable.error(parentClassType, "Class " + classTypeName + " has undefined parent " + parentClassTypeName);
+            return null;
         }
 
         classSymbol.setParent(parentClassSymbol);
