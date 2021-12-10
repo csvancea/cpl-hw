@@ -13,7 +13,7 @@ public class MethodSymbol extends IdSymbol implements Scope {
     private final Scope parent;
     
     public MethodSymbol(Scope parent, String name) {
-        super(name);
+        super(decorate(name));
         this.parent = parent;
     }
 
@@ -48,8 +48,26 @@ public class MethodSymbol extends IdSymbol implements Scope {
     public Scope getParent() {
         return parent;
     }
+
+    @Override
+    public String toString() {
+        return undecorate(getName());
+    }
     
-    public Map<String, Symbol> getFormals() {
+    public Map<String, IdSymbol> getFormals() {
         return symbols;
+    }
+
+    // În specificația Cool, metodele și atributele unei clase fac parte din scope-uri lexicale diferite,
+    // fiind permis astfel să existe metode și atribute cu același nume.
+    // Ca workaround pentru a nu fi nevoit sa am scope-uri diferite în cadrul unei clase,
+    // am ales să decorez funcțiile adăugând un underscore (caracter invalid în Cool)
+    // în fața numelor metodelor.
+    public static String decorate(String name) {
+        return "_" + name;
+    }
+
+    public static String undecorate(String name) {
+        return name.substring(1);
     }
 }
