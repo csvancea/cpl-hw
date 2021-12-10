@@ -1,7 +1,6 @@
 package cool.compiler;
 
-import cool.parser.AST.ASTConstructionVisitor;
-import cool.parser.AST.ASTPrinterVisitor;
+import cool.parser.AST.*;
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.*;
 
@@ -10,6 +9,7 @@ import cool.parser.*;
 import cool.structures.SymbolTable;
 
 import java.io.*;
+import java.util.Arrays;
 
 
 public class Compiler {
@@ -131,14 +131,32 @@ public class Compiler {
         var ast = astConstructionVisitor.visit(globalTree);
 
         // Visitor-ul de mai jos parcurge AST-ul și afișează în consolă structura programului.
-        var astPrinterVisitor = new ASTPrinterVisitor();
+        // var astPrinterVisitor = new ASTPrinterVisitor();
 
-        ast.accept(astPrinterVisitor);
+        // ast.accept(astPrinterVisitor);
 
         // Populate global scope.
         SymbolTable.defineBasicClasses();
 
-        // TODO Semantic analysis
+        // În vederea gestiunii referirilor anticipate, utilizăm mai multe treceri.
+        Arrays.asList(
+                // În prima trecere definim toate tipurile top-level (clase). Nu se verifică ierarhia.
+                new ASTClassDefinitionPassVisitor(),
+
+                // În a doua trecere se creează ierarhia de clase. Clasele derivate vor avea ca scope
+                // părinte clasa de bază. Clasele nederivate vor avea clasa Object ca părinte.
+                new ASTClassHierarchyConstructionPassVisitor(),
+
+                // În a treia trecere se verifică să nu existe cicluri în ierarhia de clase.
+                new ASTClassHierarchyValidationPassVisitor(),
+
+                // În această trecere se definesc restul simbolurilor.
+                new ASTDefinitionPassVisitor(),
+
+                // A ultima trecere se face rezolvarea simbolurilor în raport cu domeniile
+                // de vizibilitate memorate în prima trecere.
+                new ASTResolutionPassVisitor()
+        ).forEach(ast::accept);
 
         if (SymbolTable.hasSemanticErrors()) {
             System.err.println("Compilation halted");
