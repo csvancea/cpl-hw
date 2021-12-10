@@ -5,10 +5,10 @@ import java.util.*;
 // O metodă este atât simbol, cât și domeniu de vizibilitate pentru parametrii
 // săi formali.
 
-public class MethodSymbol extends Symbol implements Scope {
+public class MethodSymbol extends IdSymbol implements Scope {
  
     // LinkedHashMap reține ordinea adăugării.
-    private final Map<String, Symbol> symbols = new LinkedHashMap<>();
+    private final Map<String, IdSymbol> symbols = new LinkedHashMap<>();
     
     private final Scope parent;
     
@@ -24,7 +24,7 @@ public class MethodSymbol extends Symbol implements Scope {
         if (symbols.containsKey(sym.getName()))
             return false;
         
-        symbols.put(sym.getName(), sym);
+        symbols.put(sym.getName(), (IdSymbol)sym);
         
         return true;
     }
