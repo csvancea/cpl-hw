@@ -26,6 +26,7 @@ public class SymbolTable {
         globals.add(ClassSymbol.INT);
         globals.add(ClassSymbol.STRING);
         globals.add(ClassSymbol.BOOL);
+        globals.add(ClassSymbol.SELF_TYPE); // TODO: check if this makes sense
 
         // Define methods of the built-in types
         defineMethod(ClassSymbol.OBJECT, "abort", ClassSymbol.OBJECT);
