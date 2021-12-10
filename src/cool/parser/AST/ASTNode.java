@@ -1,5 +1,7 @@
 package cool.parser.AST;
 
+import cool.structures.IdSymbol;
+import cool.structures.Scope;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.Token;
 
@@ -40,12 +42,31 @@ abstract class Expression extends ASTNode {
 
 // Identificatori
 class Id extends Expression {
+    private IdSymbol symbol;
+    private Scope scope;
+
     Id(ParserRuleContext parserRuleContext, Token token) {
         super(parserRuleContext, token);
     }
     
     public <T> T accept(ASTVisitor<T> visitor) {
         return visitor.visit(this);
+    }
+
+    IdSymbol getSymbol() {
+        return symbol;
+    }
+
+    void setSymbol(IdSymbol symbol) {
+        this.symbol = symbol;
+    }
+
+    Scope getScope() {
+        return scope;
+    }
+
+    void setScope(Scope scope) {
+        this.scope = scope;
     }
 }
 
