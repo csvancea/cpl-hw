@@ -1,5 +1,6 @@
 package cool.parser.AST;
 
+import cool.structures.ClassSymbol;
 import cool.structures.IdSymbol;
 import cool.structures.Scope;
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -397,12 +398,22 @@ class Dispatch extends Expression {
 
 // Tipul unei expresii sau al unui feature.
 class Type extends ASTNode {
+    private ClassSymbol symbol;
+
     Type(ParserRuleContext parserRuleContext, Token token) {
         super(parserRuleContext, token);
     }
 
     public <T> T accept(ASTVisitor<T> visitor) {
         return visitor.visit(this);
+    }
+
+    ClassSymbol getSymbol() {
+        return symbol;
+    }
+
+    void setSymbol(ClassSymbol symbol) {
+        this.symbol = symbol;
     }
 }
 
