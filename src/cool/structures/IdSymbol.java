@@ -8,8 +8,9 @@ public class IdSymbol extends Symbol {
         super(name);
     }
     
-    public void setType(ClassSymbol type) {
+    public IdSymbol setType(ClassSymbol type) {
         this.type = type;
+        return this;
     }
     
     public ClassSymbol getType() {

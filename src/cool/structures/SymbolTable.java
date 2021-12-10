@@ -1,6 +1,8 @@
 package cool.structures;
 
 import java.io.File;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 import cool.parser.AST.ASTNode;
 import org.antlr.v4.runtime.*;
@@ -17,7 +19,54 @@ public class SymbolTable {
         globals = new DefaultScope(null);
         semanticErrors = false;
         
-        // TODO Populate global scope.
+        // Populate global scope.
+        ClassSymbol.OBJECT.setParent(globals);
+        globals.add(ClassSymbol.OBJECT);
+        globals.add(ClassSymbol.IO);
+        globals.add(ClassSymbol.INT);
+        globals.add(ClassSymbol.STRING);
+        globals.add(ClassSymbol.BOOL);
+
+        // Define methods of the built-in types
+        defineMethod(ClassSymbol.OBJECT, "abort", ClassSymbol.OBJECT);
+        defineMethod(ClassSymbol.OBJECT, "type_name", ClassSymbol.STRING);
+        defineMethod(ClassSymbol.OBJECT, "copy", ClassSymbol.SELF_TYPE);
+
+
+        defineMethod(ClassSymbol.IO, "out_string", ClassSymbol.SELF_TYPE, new LinkedHashMap<>(
+                Map.of("x", ClassSymbol.STRING)
+        ));
+        defineMethod(ClassSymbol.IO, "out_int", ClassSymbol.SELF_TYPE, new LinkedHashMap<>(
+                Map.of("x", ClassSymbol.INT)
+        ));
+        defineMethod(ClassSymbol.IO, "in_string", ClassSymbol.STRING);
+        defineMethod(ClassSymbol.IO, "in_int", ClassSymbol.INT);
+
+
+        defineMethod(ClassSymbol.STRING, "length", ClassSymbol.INT);
+        defineMethod(ClassSymbol.STRING, "concat", ClassSymbol.STRING, new LinkedHashMap<>(
+                Map.of("s", ClassSymbol.STRING)
+        ));
+        defineMethod(ClassSymbol.STRING, "substr", ClassSymbol.STRING, new LinkedHashMap<>(
+                Map.of("i", ClassSymbol.INT, "l", ClassSymbol.INT)
+        ));
+    }
+
+    private static void defineMethod(ClassSymbol classSymbol, String methodName, ClassSymbol returnSymbol) {
+        defineMethod(classSymbol, methodName, returnSymbol, new LinkedHashMap<>());
+    }
+
+    private static void defineMethod(ClassSymbol classSymbol, String methodName, ClassSymbol returnSymbol, LinkedHashMap<String, ClassSymbol> formals) {
+        var methodSymbol = new MethodSymbol(classSymbol, methodName);
+        methodSymbol.setType(returnSymbol);
+
+        for (Map.Entry<String, ClassSymbol> entry : formals.entrySet()) {
+            methodSymbol.add(
+                    new IdSymbol(entry.getKey()).setType(entry.getValue())
+            );
+        }
+
+        classSymbol.add(methodSymbol);
     }
     
     /**

@@ -6,6 +6,12 @@ import java.util.*;
 // și metodele sale.
 
 public class ClassSymbol extends Symbol implements Scope {
+    public static final ClassSymbol OBJECT = new ClassSymbol(null, "Object");
+    public static final ClassSymbol IO = new ClassSymbol(OBJECT, "IO");
+    public static final ClassSymbol INT = new ClassSymbol(OBJECT, "Int");
+    public static final ClassSymbol STRING = new ClassSymbol(OBJECT, "String");
+    public static final ClassSymbol BOOL = new ClassSymbol(OBJECT, "Bool");
+    public static final ClassSymbol SELF_TYPE = new ClassSymbol(OBJECT, "SELF_TYPE");
 
     // LinkedHashMap reține ordinea adăugării.
     private final Map<String, Symbol> symbols = new LinkedHashMap<>();
@@ -49,18 +55,7 @@ public class ClassSymbol extends Symbol implements Scope {
         return parent;
     }
 
-    public boolean setParent(Scope parent) {
-        // Ne asigurăm că părintele pe care vrem să îl setăm pentru clasa curentă
-        // nu are ca strămoș clasa curentă (inheritance cycle)
-        Scope temp = parent;
-        while (temp != null) {
-            if (temp == this) {
-                return false;
-            }
-            temp = temp.getParent();
-        }
-
+    public void setParent(Scope parent) {
         this.parent = parent;
-        return true;
     }
 }
