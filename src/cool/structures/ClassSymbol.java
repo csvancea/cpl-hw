@@ -58,4 +58,9 @@ public class ClassSymbol extends Symbol implements Scope {
     public void setParent(Scope parent) {
         this.parent = parent;
     }
+
+    public boolean isPrimitive()
+    {
+        return List.of(INT, STRING, BOOL).contains(this);
+    }
 }

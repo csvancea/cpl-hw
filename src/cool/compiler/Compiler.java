@@ -152,7 +152,10 @@ public class Compiler {
 
                 // În a treia trecere se validează ierarhia claselor astfel încât să nu existe
                 // dependențe circulare și se validează suprascrierile.
-                new ASTClassHierarchyValidationPassVisitor()
+                new ASTClassHierarchyValidationPassVisitor(),
+
+                // În ultima trecere se verifică tipurile expresiilor.
+                new ASTResolutionPassVisitor()
         ).forEach(ast::accept);
 
         if (SymbolTable.hasSemanticErrors()) {
