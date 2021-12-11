@@ -58,8 +58,27 @@ public class ASTResolutionPassVisitor extends ASTDefaultVisitor<ClassSymbol> {
     }
 
     @Override
+    public ClassSymbol visit(MethodDef methodDef) {
+        var id = methodDef.id;
+        var idType = id.accept(this);
+        if (idType == null)
+            return null;
+
+        var expr = methodDef.body;
+        var exprType = expr.accept(this);
+        if (exprType != null && !exprType.isSubclassOf(idType)) {
+            var idSymbol = id.getSymbol();
+
+            SymbolTable.error(expr, "Type " + exprType + " of the body of method " + idSymbol + " is incompatible with declared return type " + idType);
+            return null;
+        }
+
+        return null;
+    }
+
+    @Override
     public ClassSymbol visit(AttributeDef attributeDef) {
-        // TODO: încearcă să unești let, assign și attributeDef într-o singură metodă de validare
+        // TODO: încearcă să unești let, assign, attributeDef și methodDef într-o singură metodă de validare
 
         var id = attributeDef.id;
         var idType = id.accept(this);
