@@ -41,6 +41,18 @@ public class ASTDefinitionPassVisitor extends ASTDefaultVisitor<Void> {
     }
 
     @Override
+    public Void visit(Assign assign) {
+        var id = assign.id;
+        var idName = id.getToken().getText();
+
+        if (idName.equals("self")) {
+            SymbolTable.error(id, "Cannot assign to self");
+        }
+
+        return super.visit(assign);
+    }
+
+    @Override
     public Void visit(LocalDef localDef) {
         var id = localDef.id;
         var idName = id.getToken().getText();

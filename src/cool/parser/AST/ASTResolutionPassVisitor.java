@@ -2,6 +2,7 @@ package cool.parser.AST;
 
 import cool.parser.CoolParser;
 import cool.structures.ClassSymbol;
+import cool.structures.IdSymbol;
 import cool.structures.SymbolTable;
 
 import java.util.Objects;
@@ -57,67 +58,68 @@ public class ASTResolutionPassVisitor extends ASTDefaultVisitor<ClassSymbol> {
                 .orElse(ClassSymbol.OBJECT);
     }
 
-    @Override
-    public ClassSymbol visit(MethodDef methodDef) {
-        var id = methodDef.id;
-        var idType = id.accept(this);
+    private interface AssignmentErrorMessageFormatter {
+        java.lang.String format(ClassSymbol exprType, IdSymbol idSymbol, ClassSymbol idType);
+    }
+
+    private ClassSymbol validateAssignment(Id destNode, Expression exprNode, AssignmentErrorMessageFormatter errorFormatter) {
+        var idSymbol = destNode.getSymbol();
+        if (idSymbol == null)
+            return null;
+
+        var idType = idSymbol.getType();
         if (idType == null)
             return null;
 
-        var expr = methodDef.body;
-        var exprType = expr.accept(this);
-        if (exprType != null && !exprType.isSubclassOf(idType)) {
-            var idSymbol = id.getSymbol();
+        // Verificare dacă există expresie de inițializare (eg: pentru let)
+        if (exprNode == null)
+            return idType;
 
-            SymbolTable.error(expr, "Type " + exprType + " of the body of method " + idSymbol + " is incompatible with declared return type " + idType);
+        // TODO: Poate ar trebui ca în caz de eroare (exprType == null)
+        //       să întorc de asemenea null
+        var exprType = exprNode.accept(this);
+        if (exprType != null && !exprType.isSubclassOf(idType)) {
+            SymbolTable.error(exprNode, errorFormatter.format(exprType, idSymbol, idType));
             return null;
         }
 
-        return null;
+        return idType;
+    }
+
+    @Override
+    public ClassSymbol visit(Assign assign) {
+        return validateAssignment(
+                assign.id,
+                assign.expr,
+                (exprType, idSymbol, idType) -> "Type " + exprType + " of assigned expression is incompatible with declared type " + idType + " of identifier " + idSymbol
+        );
+    }
+
+    @Override
+    public ClassSymbol visit(MethodDef methodDef) {
+        return validateAssignment(
+                methodDef.id,
+                methodDef.body,
+                (exprType, idSymbol, idType) -> "Type " + exprType + " of the body of method " + idSymbol + " is incompatible with declared return type " + idType
+        );
     }
 
     @Override
     public ClassSymbol visit(AttributeDef attributeDef) {
-        // TODO: încearcă să unești let, assign, attributeDef și methodDef într-o singură metodă de validare
-
-        var id = attributeDef.id;
-        var idType = id.accept(this);
-        if (idType == null)
-            return null;
-
-        var expr = attributeDef.initValue;
-        if (expr != null) {
-            var exprType = expr.accept(this);
-            if (exprType != null && !exprType.isSubclassOf(idType)) {
-                var idSymbol = id.getSymbol();
-
-                SymbolTable.error(expr, "Type " + exprType + " of initialization expression of attribute " + idSymbol + " is incompatible with declared type " + idType);
-                return null;
-            }
-        }
-
-        return null;
+        return validateAssignment(
+                attributeDef.id,
+                attributeDef.initValue,
+                (exprType, idSymbol, idType) -> "Type " + exprType + " of initialization expression of attribute " + idSymbol + " is incompatible with declared type " + idType
+        );
     }
 
     @Override
     public ClassSymbol visit(LocalDef localDef) {
-        var id = localDef.id;
-        var idType = id.accept(this);
-        if (idType == null)
-            return null;
-
-        var expr = localDef.initValue;
-        if (expr != null) {
-            var exprType = expr.accept(this);
-            if (exprType != null && !exprType.isSubclassOf(idType)) {
-                var idSymbol = id.getSymbol();
-
-                SymbolTable.error(expr, "Type " + exprType + " of initialization expression of identifier " + idSymbol + " is incompatible with declared type " + idType);
-                return null;
-            }
-        }
-
-        return null;
+        return validateAssignment(
+                localDef.id,
+                localDef.initValue,
+                (exprType, idSymbol, idType) -> "Type " + exprType + " of initialization expression of identifier " + idSymbol + " is incompatible with declared type " + idType
+        );
     }
 
     @Override
@@ -172,35 +174,6 @@ public class ASTResolutionPassVisitor extends ASTDefaultVisitor<ClassSymbol> {
             return ClassSymbol.OBJECT;
 
         return thenType.getLeastUpperBound(elseType);
-    }
-
-    @Override
-    public ClassSymbol visit(Assign assign) {
-        var id = assign.id;
-        var idName = id.getToken().getText();
-        var idSymbol = id.getSymbol();
-        var idType = id.accept(this);
-
-        if (idType == null)
-            return null;
-
-        var expr = assign.expr;
-        var exprType = expr.accept(this);
-
-        if (exprType == null)
-            return null;
-
-        if (idName.equals("self")) {
-            SymbolTable.error(id, "Cannot assign to self");
-            return null;
-        }
-
-        if (!exprType.isSubclassOf(idType)) {
-            SymbolTable.error(expr, "Type " + exprType + " of assigned expression is incompatible with declared type " + idType + " of identifier " + idSymbol);
-            return null;
-        }
-
-        return exprType;
     }
 
     private boolean validateRelationalArithmeticOperand(ASTNode node, ClassSymbol type, ASTNode operator, ClassSymbol expectedType)
