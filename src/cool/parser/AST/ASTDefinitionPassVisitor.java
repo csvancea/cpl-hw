@@ -173,7 +173,7 @@ public class ASTDefinitionPassVisitor extends ASTDefaultVisitor<Void> {
             return null;
         }
 
-        var classSymbol = new ClassSymbol(SymbolTable.globals, classTypeName);
+        var classSymbol = new ClassSymbol(null, classTypeName);
         if (!SymbolTable.globals.add(classSymbol)) {
             SymbolTable.error(classType, "Class " + classTypeName + " is redefined");
             return null;

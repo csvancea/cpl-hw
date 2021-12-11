@@ -20,7 +20,6 @@ public class SymbolTable {
         semanticErrors = false;
         
         // Populate global scope.
-        ClassSymbol.OBJECT.setParent(globals);
         globals.add(ClassSymbol.OBJECT);
         globals.add(ClassSymbol.IO);
         globals.add(ClassSymbol.INT);
