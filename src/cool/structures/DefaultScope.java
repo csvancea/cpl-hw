@@ -4,7 +4,7 @@ import java.util.*;
 
 public class DefaultScope implements Scope {
     
-    protected final Map<String, Symbol> symbols = new LinkedHashMap<>();
+    private final Map<String, Symbol> symbols = new LinkedHashMap<>();
     
     private final Scope parent;
     

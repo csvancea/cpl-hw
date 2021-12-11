@@ -51,14 +51,18 @@ public class ASTDefinitionPassVisitor extends ASTDefaultVisitor<Void> {
             return null;
         }
 
+        // Expresiile de inițializare sunt evaluate în cadrul scope-ului
+        // părinte al variabilei nou definite, astfel variabila nu va fi
+        // vizibilă în interiorul propriei expresii de inițializare.
         if (localDef.initValue != null) {
+            var originalScope = currentScope;
+
+            currentScope = currentScope.getParent();
             localDef.initValue.accept(this);
+            currentScope = originalScope;
         }
 
-        // currentScope is a LetScope, which replaces symbols in case of naming collision,
-        // thus this operation can't fail
         currentScope.add(idSymbol);
-
         id.setSymbol(idSymbol);
         id.setScope(currentScope);
 
@@ -67,11 +71,19 @@ public class ASTDefinitionPassVisitor extends ASTDefaultVisitor<Void> {
 
     @Override
     public Void visit(Let let) {
-        currentScope = new LetScope(currentScope);
-        let.vars.forEach(x -> x.accept(this));
-        let.body.accept(this);
-        currentScope = currentScope.getParent();
+        var originalScope = currentScope;
 
+        // Fiecare variabilă nou introdusă va avea propriul ei scope.
+        // În cazul expresiilor let ce introduc mai multe variabile,
+        // scope-urile sunt imbricate. Corpul va fi evaluat în contextul
+        // ultimului scope (va cuprinde toate variabilele).
+        let.vars.forEach(x -> {
+            currentScope = new DefaultScope(currentScope);
+            x.accept(this);
+        });
+        let.body.accept(this);
+
+        currentScope = originalScope;
         return null;
     }
     
