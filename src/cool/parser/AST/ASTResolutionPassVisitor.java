@@ -58,6 +58,29 @@ public class ASTResolutionPassVisitor extends ASTDefaultVisitor<ClassSymbol> {
     }
 
     @Override
+    public ClassSymbol visit(AttributeDef attributeDef) {
+        // TODO: încearcă să unești let, assign și attributeDef într-o singură metodă de validare
+
+        var id = attributeDef.id;
+        var idType = id.accept(this);
+        if (idType == null)
+            return null;
+
+        var expr = attributeDef.initValue;
+        if (expr != null) {
+            var exprType = expr.accept(this);
+            if (exprType != null && !exprType.isSubclassOf(idType)) {
+                var idSymbol = id.getSymbol();
+
+                SymbolTable.error(expr, "Type " + exprType + " of initialization expression of attribute " + idSymbol + " is incompatible with declared type " + idType);
+                return null;
+            }
+        }
+
+        return null;
+    }
+
+    @Override
     public ClassSymbol visit(LocalDef localDef) {
         var id = localDef.id;
         var idType = id.accept(this);
