@@ -15,6 +15,11 @@ public class ASTResolutionPassVisitor extends ASTDefaultVisitor<ClassSymbol> {
     }
 
     @Override
+    public ClassSymbol visit(Type type) {
+        return type.getSymbol();
+    }
+
+    @Override
     public ClassSymbol visit(Int int_) {
         return ClassSymbol.INT;
     }
@@ -27,6 +32,17 @@ public class ASTResolutionPassVisitor extends ASTDefaultVisitor<ClassSymbol> {
     @Override
     public ClassSymbol visit(Bool bool_) {
         return ClassSymbol.BOOL;
+    }
+
+    @Override
+    public ClassSymbol visit(IsVoid isVoid) {
+        super.visit(isVoid);
+        return ClassSymbol.BOOL;
+    }
+
+    @Override
+    public ClassSymbol visit(New new_) {
+        return new_.type.accept(this);
     }
 
     @Override
