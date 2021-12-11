@@ -6,6 +6,41 @@ public class ASTDefinitionPassVisitor extends ASTDefaultVisitor<Void> {
     private Scope currentScope = null;
 
     @Override
+    public Void visit(LocalDef localDef) {
+        var id = localDef.id;
+        var idName = id.getToken().getText();
+        var idSymbol = new IdSymbol(idName);
+
+        if (idName.equals("self")) {
+            SymbolTable.error(id, "Let variable has illegal name self");
+            return null;
+        }
+
+        if (localDef.initValue != null) {
+            localDef.initValue.accept(this);
+        }
+
+        // currentScope is a LetScope, which replaces symbols in case of naming collision,
+        // thus this operation can't fail
+        currentScope.add(idSymbol);
+
+        id.setSymbol(idSymbol);
+        id.setScope(currentScope);
+
+        return null;
+    }
+
+    @Override
+    public Void visit(Let let) {
+        currentScope = new LetScope(currentScope);
+        let.vars.forEach(x -> x.accept(this));
+        let.body.accept(this);
+        currentScope = currentScope.getParent();
+
+        return null;
+    }
+    
+    @Override
     public Void visit(Formal formal) {
         var methodSymbol = (MethodSymbol)currentScope;
         var classSymbol = (ClassSymbol)currentScope.getParent();
