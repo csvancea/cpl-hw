@@ -6,6 +6,21 @@ import java.util.Arrays;
 
 public class ASTClassBindingPassVisitor extends ASTDefaultVisitor<Void> {
     @Override
+    public Void visit(Id id) {
+        var scope = id.getScope();
+        var idName = id.getToken().getText();
+        var idSymbol = (IdSymbol)scope.lookup(idName);
+
+        if (idSymbol == null) {
+            SymbolTable.error(id, "Undefined identifier " + idName);
+            return null;
+        }
+
+        id.setSymbol(idSymbol);
+        return null;
+    }
+
+    @Override
     public Void visit(CaseTest caseTest) {
         var id = caseTest.id;
         var idSymbol = id.getSymbol();

@@ -6,6 +6,12 @@ public class ASTDefinitionPassVisitor extends ASTDefaultVisitor<Void> {
     private Scope currentScope = null;
 
     @Override
+    public Void visit(Id id) {
+        id.setScope(currentScope);
+        return null;
+    }
+
+    @Override
     public Void visit(CaseTest caseTest) {
         var id = caseTest.id;
         var idName = id.getToken().getText();
@@ -160,8 +166,11 @@ public class ASTDefinitionPassVisitor extends ASTDefaultVisitor<Void> {
             SymbolTable.error(classType, "Class " + classTypeName + " is redefined");
             return null;
         }
-
         classType.setSymbol(classSymbol);
+
+        var selfSymbol = new IdSymbol("self");
+        selfSymbol.setType(ClassSymbol.SELF_TYPE);
+        classSymbol.add(selfSymbol);
 
         currentScope = classSymbol;
         class_.features.forEach(x -> x.accept(this));
