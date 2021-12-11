@@ -140,7 +140,7 @@ public class ASTDefinitionPassVisitor extends ASTDefaultVisitor<Void> {
         id.setScope(currentScope);
 
         if (attributeDef.initValue != null) {
-            attributeDef.accept(this);
+            attributeDef.initValue.accept(this);
         }
 
         return null;

@@ -57,6 +57,10 @@ public class ASTClassBindingPassVisitor extends ASTDefaultVisitor<Void> {
         idSymbol.setType(typeSymbol);
         type.setSymbol(typeSymbol);
 
+        if (localDef.initValue != null) {
+            localDef.initValue.accept(this);
+        }
+
         return null;
     }
 
@@ -151,7 +155,7 @@ public class ASTClassBindingPassVisitor extends ASTDefaultVisitor<Void> {
         type.setSymbol(typeSymbol);
 
         if (attributeDef.initValue != null) {
-            attributeDef.accept(this);
+            attributeDef.initValue.accept(this);
         }
 
         return null;
