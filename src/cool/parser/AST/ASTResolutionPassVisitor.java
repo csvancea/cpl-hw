@@ -48,6 +48,16 @@ public class ASTResolutionPassVisitor extends ASTDefaultVisitor<ClassSymbol> {
     }
 
     @Override
+    public ClassSymbol visit(Block block) {
+        return block.exprs
+                .stream()
+                .map(x -> x.accept(this))
+                .filter(Objects::nonNull)
+                .reduce((a, b) -> b)
+                .orElse(ClassSymbol.OBJECT);
+    }
+
+    @Override
     public ClassSymbol visit(CaseTest caseTest) {
         return caseTest.body.accept(this);
     }
@@ -121,8 +131,7 @@ public class ASTResolutionPassVisitor extends ASTDefaultVisitor<ClassSymbol> {
             return null;
         }
 
-        // Operația de atribuire nu are tip în Cool.
-        return null;
+        return exprType;
     }
 
     private boolean validateRelationalArithmeticOperand(ASTNode node, ClassSymbol type, ASTNode operator, ClassSymbol expectedType)
