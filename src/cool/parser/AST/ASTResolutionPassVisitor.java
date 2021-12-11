@@ -46,6 +46,36 @@ public class ASTResolutionPassVisitor extends ASTDefaultVisitor<ClassSymbol> {
     }
 
     @Override
+    public ClassSymbol visit(While while_) {
+        var condType = while_.cond.accept(this);
+        while_.body.accept(this);
+
+        if (condType != null && condType != ClassSymbol.BOOL) {
+            SymbolTable.error(while_.cond, "While condition has type " + condType + " instead of Bool");
+        }
+
+        return ClassSymbol.OBJECT;
+    }
+
+    @Override
+    public ClassSymbol visit(If if_) {
+        var condType = if_.cond.accept(this);
+        var thenType = if_.thenBranch.accept(this);
+        var elseType = if_.elseBranch.accept(this);
+
+        // Dacă oricare subexpresie generează o eroare de tip, consider că întreaga expresie if are tipul Object.
+        if (condType != null && condType != ClassSymbol.BOOL) {
+            SymbolTable.error(if_.cond, "If condition has type " + condType + " instead of Bool");
+            return ClassSymbol.OBJECT;
+        }
+
+        if (condType == null || thenType == null || elseType == null)
+            return ClassSymbol.OBJECT;
+
+        return thenType.getLeastUpperBound(elseType);
+    }
+
+    @Override
     public ClassSymbol visit(Assign assign) {
         var id = assign.id;
         var idName = id.getToken().getText();
