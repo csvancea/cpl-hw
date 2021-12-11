@@ -43,9 +43,9 @@ expr
     | CASE instance=expr OF (cases+=caseTest)+ ESAC                                                                     # case
     | NEW type=TYPE                                                                                                     # new
     | ISVOID instance=expr                                                                                              # isVoid
+    | NEG e=expr                                                                                                        # negate
     | left=expr op=(MULT | DIV) right=expr                                                                              # multDiv
     | left=expr op=(PLUS | MINUS) right=expr                                                                            # plusMinus
-    | NEG e=expr                                                                                                        # negate
     | left=expr op=(LT | LE | EQUAL) right=expr                                                                         # relational
     | NOT e=expr                                                                                                        # not
     | LPAREN e=expr RPAREN                                                                                              # paren
