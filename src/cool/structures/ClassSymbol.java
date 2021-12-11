@@ -63,4 +63,17 @@ public class ClassSymbol extends Symbol implements Scope {
     {
         return List.of(INT, STRING, BOOL).contains(this);
     }
+
+    public boolean isSubclassOf(ClassSymbol other) {
+        Scope temp = this;
+
+        do {
+            if (temp == other) {
+                return true;
+            }
+            temp = temp.getParent();
+        } while (temp != null);
+
+        return false;
+    }
 }

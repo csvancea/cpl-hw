@@ -8,6 +8,9 @@ public class ASTClassBindingPassVisitor extends ASTDefaultVisitor<Void> {
     @Override
     public Void visit(Id id) {
         var scope = id.getScope();
+        if (scope == null)
+            return null;
+
         var idName = id.getToken().getText();
         var idSymbol = (IdSymbol)scope.lookup(idName);
 

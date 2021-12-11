@@ -29,6 +29,36 @@ public class ASTResolutionPassVisitor extends ASTDefaultVisitor<ClassSymbol> {
         return ClassSymbol.BOOL;
     }
 
+    @Override
+    public ClassSymbol visit(Assign assign) {
+        var id = assign.id;
+        var idName = id.getToken().getText();
+        var idSymbol = id.getSymbol();
+        var idType = id.accept(this);
+
+        if (idType == null)
+            return null;
+
+        var expr = assign.expr;
+        var exprType = expr.accept(this);
+
+        if (exprType == null)
+            return null;
+
+        if (idName.equals("self")) {
+            SymbolTable.error(id, "Cannot assign to self");
+            return null;
+        }
+
+        if (!exprType.isSubclassOf(idType)) {
+            SymbolTable.error(expr, "Type " + exprType + " of assigned expression is incompatible with declared type " + idType + " of identifier " + idSymbol);
+            return null;
+        }
+
+        // Operația de atribuire nu are tip în Cool.
+        return null;
+    }
+
     private boolean validateRelationalArithmeticOperand(ASTNode node, ClassSymbol type, ASTNode operator, ClassSymbol expectedType)
     {
         if (type != expectedType) {
