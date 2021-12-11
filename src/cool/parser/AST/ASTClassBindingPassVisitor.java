@@ -61,6 +61,8 @@ public class ASTClassBindingPassVisitor extends ASTDefaultVisitor<Void> {
 
         idSymbol.setType(typeSymbol);
         type.setSymbol(typeSymbol);
+
+        caseTest.body.accept(this);
         return null;
     }
 

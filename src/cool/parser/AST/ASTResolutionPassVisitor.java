@@ -4,6 +4,8 @@ import cool.parser.CoolParser;
 import cool.structures.ClassSymbol;
 import cool.structures.SymbolTable;
 
+import java.util.Objects;
+
 public class ASTResolutionPassVisitor extends ASTDefaultVisitor<ClassSymbol> {
     @Override
     public ClassSymbol visit(Id id) {
@@ -43,6 +45,24 @@ public class ASTResolutionPassVisitor extends ASTDefaultVisitor<ClassSymbol> {
     @Override
     public ClassSymbol visit(New new_) {
         return new_.type.accept(this);
+    }
+
+    @Override
+    public ClassSymbol visit(CaseTest caseTest) {
+        return caseTest.body.accept(this);
+    }
+
+    @Override
+    public ClassSymbol visit(Case case_) {
+        case_.instance.accept(this);
+
+        var lub = case_.caseTests
+                .stream()
+                .map(x -> x.accept(this))
+                .filter(Objects::nonNull)
+                .reduce(ClassSymbol::getLeastUpperBound);
+
+        return lub.orElse(ClassSymbol.OBJECT);
     }
 
     @Override
