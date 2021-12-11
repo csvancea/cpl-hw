@@ -6,6 +6,39 @@ import java.util.Arrays;
 
 public class ASTClassBindingPassVisitor extends ASTDefaultVisitor<Void> {
     @Override
+    public Void visit(CaseTest caseTest) {
+        var id = caseTest.id;
+        var idSymbol = id.getSymbol();
+        if (idSymbol == null)
+            return null;
+
+        var type = caseTest.type;
+        var typeName = type.getToken().getText();
+        var typeSymbol = (ClassSymbol)SymbolTable.globals.lookup(typeName);
+
+        if (typeName.equals("SELF_TYPE")) {
+            SymbolTable.error(type, "Case variable " + idSymbol + " has illegal type SELF_TYPE");
+            return null;
+        }
+
+        if (typeSymbol == null) {
+            SymbolTable.error(type, "Case variable " + idSymbol + " has undefined type " + typeName);
+            return null;
+        }
+
+        idSymbol.setType(typeSymbol);
+        type.setSymbol(typeSymbol);
+        return null;
+    }
+
+    @Override
+    public Void visit(Case case_) {
+        case_.instance.accept(this);
+        case_.caseTests.forEach(x -> x.accept(this));
+        return null;
+    }
+
+    @Override
     public Void visit(LocalDef localDef) {
         var id = localDef.id;
         var idSymbol = id.getSymbol();

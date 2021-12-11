@@ -6,6 +6,35 @@ public class ASTDefinitionPassVisitor extends ASTDefaultVisitor<Void> {
     private Scope currentScope = null;
 
     @Override
+    public Void visit(CaseTest caseTest) {
+        var id = caseTest.id;
+        var idName = id.getToken().getText();
+        var idSymbol = new IdSymbol(idName);
+
+        if (idName.equals("self")) {
+            SymbolTable.error(id, "Case variable has illegal name self");
+            return null;
+        }
+
+        currentScope = new DefaultScope(currentScope);
+
+        currentScope.add(idSymbol);
+        id.setSymbol(idSymbol);
+        id.setScope(currentScope);
+        caseTest.body.accept(this);
+
+        currentScope = currentScope.getParent();
+        return null;
+    }
+
+    @Override
+    public Void visit(Case case_) {
+        case_.instance.accept(this);
+        case_.caseTests.forEach(x -> x.accept(this));
+        return null;
+    }
+
+    @Override
     public Void visit(LocalDef localDef) {
         var id = localDef.id;
         var idName = id.getToken().getText();
