@@ -7,9 +7,13 @@ import java.util.Arrays;
 public class ASTClassBindingPassVisitor extends ASTDefaultVisitor<Void> {
     @Override
     public Void visit(New new_) {
+        var scope = new_.getScope();
+        if (scope == null)
+            return null;
+
         var type = new_.type;
         var typeName = type.getToken().getText();
-        var typeSymbol = (ClassSymbol)SymbolTable.globals.lookup(typeName);
+        var typeSymbol = (ClassSymbol)scope.lookup(typeName);
 
         if (typeSymbol == null) {
             SymbolTable.error(type, "new is used with undefined type " + typeName);
@@ -80,9 +84,13 @@ public class ASTClassBindingPassVisitor extends ASTDefaultVisitor<Void> {
         if (idSymbol == null)
             return null;
 
+        var scope = id.getScope();
+        if (scope == null)
+            return null;
+
         var type = localDef.type;
         var typeName = type.getToken().getText();
-        var typeSymbol = (ClassSymbol)SymbolTable.globals.lookup(typeName);
+        var typeSymbol = (ClassSymbol)scope.lookup(typeName);
 
         if (typeSymbol == null) {
             SymbolTable.error(type, "Let variable " + idSymbol + " has undefined type " + typeName);
@@ -104,6 +112,38 @@ public class ASTClassBindingPassVisitor extends ASTDefaultVisitor<Void> {
         let.vars.forEach(x -> x.accept(this));
         let.body.accept(this);
 
+        return null;
+    }
+
+    @Override
+    public Void visit(Dispatch dispatch) {
+        // În această etapă nu se poate concluziona nimic despre apelurile dinamice
+        // deoarece nu avem informații despre tipurile expresiilor.
+
+        var type = dispatch.type;
+        if (type != null) {
+            // Static dispatch!
+
+            var typeName = type.getToken().getText();
+            var typeSymbol = (ClassSymbol) SymbolTable.globals.lookup(typeName);
+
+            if (typeName.equals("SELF_TYPE")) {
+                SymbolTable.error(type, "Type of static dispatch cannot be SELF_TYPE");
+                return null;
+            }
+
+            if (typeSymbol == null) {
+                SymbolTable.error(type, "Type " + typeName + " of static dispatch is undefined");
+                return null;
+            }
+
+            dispatch.type.setSymbol(typeSymbol);
+        }
+
+        if (dispatch.instance != null)
+            dispatch.instance.accept(this);
+
+        dispatch.args.forEach(x -> x.accept(this));
         return null;
     }
 
@@ -151,7 +191,7 @@ public class ASTClassBindingPassVisitor extends ASTDefaultVisitor<Void> {
 
         var type = methodDef.type;
         var typeName = type.getToken().getText();
-        var typeSymbol = (ClassSymbol)SymbolTable.globals.lookup(typeName);
+        var typeSymbol = (ClassSymbol)classSymbol.lookup(typeName);
 
         if (typeSymbol == null) {
             SymbolTable.error(type, "Class " + classSymbol + " has method " + methodSymbol + " with undefined return type " + typeName);
@@ -179,7 +219,7 @@ public class ASTClassBindingPassVisitor extends ASTDefaultVisitor<Void> {
 
         var type = attributeDef.type;
         var typeName = type.getToken().getText();
-        var typeSymbol = (ClassSymbol)SymbolTable.globals.lookup(typeName);
+        var typeSymbol = (ClassSymbol)classSymbol.lookup(typeName);
 
         if (typeSymbol == null) {
             SymbolTable.error(type, "Class " + classSymbol + " has attribute " + idSymbol + " with undefined type " + typeName);
@@ -204,7 +244,7 @@ public class ASTClassBindingPassVisitor extends ASTDefaultVisitor<Void> {
 
         var parentClassType = class_.superType;
         if (parentClassType == null) {
-            classSymbol.setParent(ClassSymbol.OBJECT);
+            classSymbol.setParent(ActualClassSymbol.OBJECT);
         }
         else {
             var parentClassTypeName = parentClassType.getToken().getText();

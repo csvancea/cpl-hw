@@ -12,6 +12,12 @@ public class ASTDefinitionPassVisitor extends ASTDefaultVisitor<Void> {
     }
 
     @Override
+    public Void visit(New new_) {
+        new_.setScope(currentScope);
+        return null;
+    }
+
+    @Override
     public Void visit(CaseTest caseTest) {
         var id = caseTest.id;
         var idName = id.getToken().getText();
@@ -98,7 +104,13 @@ public class ASTDefinitionPassVisitor extends ASTDefaultVisitor<Void> {
         currentScope = originalScope;
         return null;
     }
-    
+
+    @Override
+    public Void visit(Dispatch dispatch) {
+        dispatch.id.setScope(currentScope);
+        return super.visit(dispatch);
+    }
+
     @Override
     public Void visit(Formal formal) {
         var methodSymbol = (MethodSymbol)currentScope;
@@ -185,16 +197,12 @@ public class ASTDefinitionPassVisitor extends ASTDefaultVisitor<Void> {
             return null;
         }
 
-        var classSymbol = new ClassSymbol(null, classTypeName);
+        var classSymbol = new ActualClassSymbol(null, classTypeName);
         if (!SymbolTable.globals.add(classSymbol)) {
             SymbolTable.error(classType, "Class " + classTypeName + " is redefined");
             return null;
         }
         classType.setSymbol(classSymbol);
-
-        var selfSymbol = new IdSymbol("self");
-        selfSymbol.setType(ClassSymbol.SELF_TYPE);
-        classSymbol.add(selfSymbol);
 
         currentScope = classSymbol;
         class_.features.forEach(x -> x.accept(this));

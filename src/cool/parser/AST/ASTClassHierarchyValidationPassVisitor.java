@@ -30,7 +30,7 @@ public class ASTClassHierarchyValidationPassVisitor extends ASTDefaultVisitor<Vo
         var type = methodDef.type;
         var methodTypeSymbol = methodSymbol.getType();
         var overriddenMethodTypeSymbol = overriddenMethodSymbol.getType();
-        if (overriddenMethodTypeSymbol != methodSymbol.getType()) {
+        if (overriddenMethodTypeSymbol != methodTypeSymbol && !overriddenMethodTypeSymbol.isSelfType() && !methodTypeSymbol.isSelfType()) {
             SymbolTable.error(type, "Class " + classSymbol + " overrides method " + methodSymbol + " but changes return type from " + overriddenMethodTypeSymbol + " to " + methodTypeSymbol);
             return null;
         }

@@ -20,35 +20,34 @@ public class SymbolTable {
         semanticErrors = false;
         
         // Populate global scope.
-        globals.add(ClassSymbol.OBJECT);
-        globals.add(ClassSymbol.IO);
-        globals.add(ClassSymbol.INT);
-        globals.add(ClassSymbol.STRING);
-        globals.add(ClassSymbol.BOOL);
-        globals.add(ClassSymbol.SELF_TYPE); // TODO: check if this makes sense
+        globals.add(ActualClassSymbol.OBJECT);
+        globals.add(ActualClassSymbol.IO);
+        globals.add(ActualClassSymbol.INT);
+        globals.add(ActualClassSymbol.STRING);
+        globals.add(ActualClassSymbol.BOOL);
 
         // Define methods of the built-in types
-        defineMethod(ClassSymbol.OBJECT, "abort", ClassSymbol.OBJECT);
-        defineMethod(ClassSymbol.OBJECT, "type_name", ClassSymbol.STRING);
-        defineMethod(ClassSymbol.OBJECT, "copy", ClassSymbol.SELF_TYPE);
+        defineMethod(ActualClassSymbol.OBJECT, "abort", ActualClassSymbol.OBJECT);
+        defineMethod(ActualClassSymbol.OBJECT, "type_name", ActualClassSymbol.STRING);
+        defineMethod(ActualClassSymbol.OBJECT, "copy", ActualClassSymbol.OBJECT.SELF_TYPE);
 
 
-        defineMethod(ClassSymbol.IO, "out_string", ClassSymbol.SELF_TYPE, new LinkedHashMap<>(
-                Map.of("x", ClassSymbol.STRING)
+        defineMethod(ActualClassSymbol.IO, "out_string", ActualClassSymbol.IO.SELF_TYPE, new LinkedHashMap<>(
+                Map.of("x", ActualClassSymbol.STRING)
         ));
-        defineMethod(ClassSymbol.IO, "out_int", ClassSymbol.SELF_TYPE, new LinkedHashMap<>(
-                Map.of("x", ClassSymbol.INT)
+        defineMethod(ActualClassSymbol.IO, "out_int", ActualClassSymbol.IO.SELF_TYPE, new LinkedHashMap<>(
+                Map.of("x", ActualClassSymbol.INT)
         ));
-        defineMethod(ClassSymbol.IO, "in_string", ClassSymbol.STRING);
-        defineMethod(ClassSymbol.IO, "in_int", ClassSymbol.INT);
+        defineMethod(ActualClassSymbol.IO, "in_string", ActualClassSymbol.STRING);
+        defineMethod(ActualClassSymbol.IO, "in_int", ActualClassSymbol.INT);
 
 
-        defineMethod(ClassSymbol.STRING, "length", ClassSymbol.INT);
-        defineMethod(ClassSymbol.STRING, "concat", ClassSymbol.STRING, new LinkedHashMap<>(
-                Map.of("s", ClassSymbol.STRING)
+        defineMethod(ActualClassSymbol.STRING, "length", ActualClassSymbol.INT);
+        defineMethod(ActualClassSymbol.STRING, "concat", ActualClassSymbol.STRING, new LinkedHashMap<>(
+                Map.of("s", ActualClassSymbol.STRING)
         ));
-        defineMethod(ClassSymbol.STRING, "substr", ClassSymbol.STRING, new LinkedHashMap<>(
-                Map.of("i", ClassSymbol.INT, "l", ClassSymbol.INT)
+        defineMethod(ActualClassSymbol.STRING, "substr", ActualClassSymbol.STRING, new LinkedHashMap<>(
+                Map.of("i", ActualClassSymbol.INT, "l", ActualClassSymbol.INT)
         ));
     }
 

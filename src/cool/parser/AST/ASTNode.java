@@ -228,6 +228,7 @@ class Case extends Expression {
 // Construcția new.
 class New extends Expression {
     Type type;
+    private Scope scope;
 
     New(Type type, ParserRuleContext parserRuleContext, Token start) {
         super(parserRuleContext, start);
@@ -236,6 +237,14 @@ class New extends Expression {
 
     public <T> T accept(ASTVisitor<T> visitor) {
         return visitor.visit(this);
+    }
+
+    Scope getScope() {
+        return scope;
+    }
+
+    void setScope(Scope scope) {
+        this.scope = scope;
     }
 }
 

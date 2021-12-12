@@ -1,9 +1,9 @@
 package cool.parser.AST;
 
 import cool.parser.CoolParser;
-import cool.structures.ClassSymbol;
-import cool.structures.IdSymbol;
-import cool.structures.SymbolTable;
+import cool.structures.*;
+import cool.util.stream;
+import org.antlr.v4.runtime.misc.Pair;
 
 import java.util.Objects;
 
@@ -24,28 +24,157 @@ public class ASTResolutionPassVisitor extends ASTDefaultVisitor<ClassSymbol> {
 
     @Override
     public ClassSymbol visit(Int int_) {
-        return ClassSymbol.INT;
+        return ActualClassSymbol.INT;
     }
 
     @Override
     public ClassSymbol visit(String string) {
-        return ClassSymbol.STRING;
+        return ActualClassSymbol.STRING;
     }
 
     @Override
     public ClassSymbol visit(Bool bool_) {
-        return ClassSymbol.BOOL;
+        return ActualClassSymbol.BOOL;
     }
 
     @Override
     public ClassSymbol visit(IsVoid isVoid) {
         super.visit(isVoid);
-        return ClassSymbol.BOOL;
+        return ActualClassSymbol.BOOL;
     }
 
     @Override
     public ClassSymbol visit(New new_) {
         return new_.type.accept(this);
+    }
+
+    private static ClassSymbol resolveReturnTypeToActualType(ClassSymbol instanceType, ClassSymbol returnType) {
+        if (!returnType.isSelfType())
+            return returnType;
+
+        return instanceType;
+    }
+
+    @Override
+    public ClassSymbol visit(Dispatch dispatch) {
+        var id = dispatch.id;
+        var idName = id.getToken().getText();
+        var decoratedIdName = MethodSymbol.decorate(idName);
+        var scope = id.getScope();
+
+        // Tipul instanței pe care se aplică metoda.
+        ClassSymbol instanceType;
+
+        // Clasa în care se va căuta metoda apelată.
+        ClassSymbol lookupType;
+
+        // În prima parte se determină structura apelului (static sau dinamic, instanță implicită sau explicită)
+        if (dispatch.instance == null) {
+            // Nu se specifică o instanță anume. Se consideră că apelul se aplică implicit
+            // pe atributul self al clasei curente (clasa din care e apelată metoda)
+            // Apelul simplificat arată astfel: f(e')
+
+            var selfSymbol = (IdSymbol)scope.lookup("self");
+            if (selfSymbol == null) {
+                SymbolTable.error(dispatch.id, "Method " + idName + " cant find implicit self");
+                return null;
+            }
+
+            instanceType = selfSymbol.getType().getActualType();
+            lookupType = instanceType;
+        }
+        else {
+            instanceType = dispatch.instance.accept(this);
+            if (instanceType == null) {
+                return null;
+            }
+
+            instanceType = instanceType.getActualType();
+
+            if (dispatch.type == null) {
+                // Nu se specifică o superclasă anume. Metoda va fi căutată în clasa typeof(e)
+                // Apelul simplificat arată astfel: e.f(e')
+                lookupType = instanceType;
+            }
+            else {
+                // Se specifică o superclasă. Metoda va fi căutată în clasa C.
+                // Apelul arată astfel: e@C.f(e')
+                lookupType = dispatch.type.getSymbol();
+            }
+        }
+
+        if (!instanceType.isSubclassOf(lookupType)) {
+            SymbolTable.error(dispatch.type, "Type " + lookupType + " of static dispatch is not a superclass of type " + instanceType);
+            return null;
+        }
+
+        var methodSymbol = (MethodSymbol) lookupType.lookup(decoratedIdName);
+        if (methodSymbol == null) {
+            SymbolTable.error(dispatch.id, "Undefined method " + idName + " in class " + lookupType);
+            return null;
+        }
+
+        var methodFormals = methodSymbol.getFormals();
+        if (methodFormals.size() != dispatch.args.size()) {
+            SymbolTable.error(dispatch.id, "Method " + idName + " of class " + lookupType + " is applied to wrong number of arguments");
+            return resolveReturnTypeToActualType(instanceType, methodSymbol.getType());
+        }
+
+        var actualInvokeTypes = dispatch.args
+                .stream()
+                .map(x -> new Pair<>(x, x.accept(this)))
+                .filter(x -> x.b != null);
+
+        if (actualInvokeTypes.count() != methodFormals.size()) {
+            SymbolTable.error(dispatch.id, "Method " + idName + " of class " + lookupType + "  something bad happened");
+            // Una sau mai multe expresii ale parametrilor actuali a produs o eroare de tip. Stop!
+            return resolveReturnTypeToActualType(instanceType, methodSymbol.getType());
+        }
+
+        actualInvokeTypes = dispatch.args
+                .stream()
+                .map(x -> new Pair<>(x, x.accept(this)))
+                .filter(x -> x.b != null);
+
+        class TypeMismatch {
+            final IdSymbol formalSymbol;
+            final ClassSymbol actualType;
+            final Expression actualExpr;
+
+            TypeMismatch(IdSymbol formalSymbol, ClassSymbol actualType, Expression actualExpr) {
+                this.formalSymbol = formalSymbol;
+                this.actualType = actualType;
+                this.actualExpr = actualExpr;
+            }
+        }
+
+        var typeMismatch = stream.zip(
+                        methodSymbol.getFormals().entrySet().stream(),
+                        actualInvokeTypes,
+                        (formalEntry, actualType) -> {
+                            var formalName = formalEntry.getKey();
+                            var formalSymbol = formalEntry.getValue();
+                            var formalType = formalSymbol.getType();
+
+                            if (!actualType.b.isSubclassOf(formalType)) {
+                                return new TypeMismatch(formalSymbol, actualType.b, actualType.a);
+                            }
+
+                            return null;
+                        }
+                )
+                .filter(Objects::nonNull)
+                .findFirst();
+
+        if (typeMismatch.isPresent()) {
+            var mismatch = typeMismatch.get();
+
+            SymbolTable.error(mismatch.actualExpr, "In call to method " + methodSymbol + " of class " + lookupType + ", actual type " + mismatch.actualType + " of formal parameter " + mismatch.formalSymbol.getName() + " is incompatible with declared type " + mismatch.formalSymbol.getType());
+            return resolveReturnTypeToActualType(instanceType, methodSymbol.getType());
+        }
+
+        id.setSymbol(methodSymbol);
+        return resolveReturnTypeToActualType(instanceType, methodSymbol.getType());
     }
 
     @Override
@@ -55,7 +184,7 @@ public class ASTResolutionPassVisitor extends ASTDefaultVisitor<ClassSymbol> {
                 .map(x -> x.accept(this))
                 .filter(Objects::nonNull)
                 .reduce((a, b) -> b)
-                .orElse(ClassSymbol.OBJECT);
+                .orElse(ActualClassSymbol.OBJECT);
     }
 
     private interface AssignmentErrorMessageFormatter {
@@ -71,6 +200,12 @@ public class ASTResolutionPassVisitor extends ASTDefaultVisitor<ClassSymbol> {
         if (idType == null)
             return null;
 
+        ClassSymbol actualIdType;
+        if (idType.isSelfType())
+            actualIdType = ((IdSymbol)destNode.getScope().lookup("self")).getType().getActualType();
+        else
+            actualIdType = idType;
+
         // Verificare dacă există expresie de inițializare (eg: pentru let)
         if (exprNode == null)
             return idType;
@@ -78,7 +213,7 @@ public class ASTResolutionPassVisitor extends ASTDefaultVisitor<ClassSymbol> {
         // TODO: Poate ar trebui ca în caz de eroare (exprType == null)
         //       să întorc de asemenea null
         var exprType = exprNode.accept(this);
-        if (exprType != null && !exprType.isSubclassOf(idType)) {
+        if (exprType != null && !exprType.isSubclassOf(actualIdType)) {
             SymbolTable.error(exprNode, errorFormatter.format(exprType, idSymbol, idType));
             return null;
         }
@@ -143,7 +278,7 @@ public class ASTResolutionPassVisitor extends ASTDefaultVisitor<ClassSymbol> {
                 .filter(Objects::nonNull)
                 .reduce(ClassSymbol::getLeastUpperBound);
 
-        return lub.orElse(ClassSymbol.OBJECT);
+        return lub.orElse(ActualClassSymbol.OBJECT);
     }
 
     @Override
@@ -151,11 +286,11 @@ public class ASTResolutionPassVisitor extends ASTDefaultVisitor<ClassSymbol> {
         var condType = while_.cond.accept(this);
         while_.body.accept(this);
 
-        if (condType != null && condType != ClassSymbol.BOOL) {
+        if (condType != null && condType != ActualClassSymbol.BOOL) {
             SymbolTable.error(while_.cond, "While condition has type " + condType + " instead of Bool");
         }
 
-        return ClassSymbol.OBJECT;
+        return ActualClassSymbol.OBJECT;
     }
 
     @Override
@@ -165,13 +300,13 @@ public class ASTResolutionPassVisitor extends ASTDefaultVisitor<ClassSymbol> {
         var elseType = if_.elseBranch.accept(this);
 
         // Dacă oricare subexpresie generează o eroare de tip, consider că întreaga expresie if are tipul Object.
-        if (condType != null && condType != ClassSymbol.BOOL) {
+        if (condType != null && condType != ActualClassSymbol.BOOL) {
             SymbolTable.error(if_.cond, "If condition has type " + condType + " instead of Bool");
-            return ClassSymbol.OBJECT;
+            return ActualClassSymbol.OBJECT;
         }
 
         if (condType == null || thenType == null || elseType == null)
-            return ClassSymbol.OBJECT;
+            return ActualClassSymbol.OBJECT;
 
         return thenType.getLeastUpperBound(elseType);
     }
@@ -219,57 +354,57 @@ public class ASTResolutionPassVisitor extends ASTDefaultVisitor<ClassSymbol> {
                 return null;
             }
         }
-        else if (!validateRelationalArithmeticOperation(rel.left, rel.right, rel, ClassSymbol.INT)) {
+        else if (!validateRelationalArithmeticOperation(rel.left, rel.right, rel, ActualClassSymbol.INT)) {
             return null;
         }
 
-        return ClassSymbol.BOOL;
+        return ActualClassSymbol.BOOL;
     }
 
     @Override
     public ClassSymbol visit(Not not) {
-        if (!validateRelationalArithmeticOperation(not.expr, null, not, ClassSymbol.BOOL))
+        if (!validateRelationalArithmeticOperation(not.expr, null, not, ActualClassSymbol.BOOL))
             return null;
 
-        return ClassSymbol.BOOL;
+        return ActualClassSymbol.BOOL;
     }
 
     @Override
     public ClassSymbol visit(Plus plus) {
-        if (!validateRelationalArithmeticOperation(plus.left, plus.right, plus, ClassSymbol.INT))
+        if (!validateRelationalArithmeticOperation(plus.left, plus.right, plus, ActualClassSymbol.INT))
             return null;
 
-        return ClassSymbol.INT;
+        return ActualClassSymbol.INT;
     }
 
     @Override
     public ClassSymbol visit(Minus minus) {
-        if (!validateRelationalArithmeticOperation(minus.left, minus.right, minus, ClassSymbol.INT))
+        if (!validateRelationalArithmeticOperation(minus.left, minus.right, minus, ActualClassSymbol.INT))
             return null;
 
-        return ClassSymbol.INT;
+        return ActualClassSymbol.INT;
     }
 
     @Override
     public ClassSymbol visit(Mult mult) {
-        if (!validateRelationalArithmeticOperation(mult.left, mult.right, mult, ClassSymbol.INT))
+        if (!validateRelationalArithmeticOperation(mult.left, mult.right, mult, ActualClassSymbol.INT))
             return null;
 
-        return ClassSymbol.INT;
+        return ActualClassSymbol.INT;
     }
 
     @Override
     public ClassSymbol visit(Div div) {
-        if (!validateRelationalArithmeticOperation(div.left, div.right, div, ClassSymbol.INT))
+        if (!validateRelationalArithmeticOperation(div.left, div.right, div, ActualClassSymbol.INT))
             return null;
 
-        return ClassSymbol.INT;
+        return ActualClassSymbol.INT;
     }
 
     @Override
     public ClassSymbol visit(Negate negate) {
         // Checker-ul nu vrea această eroare propagată mai sus
-        validateRelationalArithmeticOperation(negate.expr, null, negate, ClassSymbol.INT);
-        return ClassSymbol.INT;
+        validateRelationalArithmeticOperation(negate.expr, null, negate, ActualClassSymbol.INT);
+        return ActualClassSymbol.INT;
     }
 }
