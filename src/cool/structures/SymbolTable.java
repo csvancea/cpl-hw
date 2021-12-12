@@ -1,14 +1,14 @@
 package cool.structures;
 
 import java.io.File;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.List;
 
 import cool.parser.AST.ASTNode;
 import org.antlr.v4.runtime.*;
 
 import cool.compiler.Compiler;
 import cool.parser.CoolParser;
+import org.antlr.v4.runtime.misc.Pair;
 
 public class SymbolTable {
     public static Scope globals;
@@ -32,39 +32,36 @@ public class SymbolTable {
         defineMethod(ActualClassSymbol.OBJECT, "copy", ActualClassSymbol.OBJECT.SELF_TYPE);
 
 
-        defineMethod(ActualClassSymbol.IO, "out_string", ActualClassSymbol.IO.SELF_TYPE, new LinkedHashMap<>(
-                Map.of("x", ActualClassSymbol.STRING)
+        defineMethod(ActualClassSymbol.IO, "out_string", ActualClassSymbol.IO.SELF_TYPE, List.of(
+                new Pair<>("x", ActualClassSymbol.STRING)
         ));
-        defineMethod(ActualClassSymbol.IO, "out_int", ActualClassSymbol.IO.SELF_TYPE, new LinkedHashMap<>(
-                Map.of("x", ActualClassSymbol.INT)
+        defineMethod(ActualClassSymbol.IO, "out_int", ActualClassSymbol.IO.SELF_TYPE, List.of(
+                new Pair<>("x", ActualClassSymbol.INT)
         ));
         defineMethod(ActualClassSymbol.IO, "in_string", ActualClassSymbol.STRING);
         defineMethod(ActualClassSymbol.IO, "in_int", ActualClassSymbol.INT);
 
 
         defineMethod(ActualClassSymbol.STRING, "length", ActualClassSymbol.INT);
-        defineMethod(ActualClassSymbol.STRING, "concat", ActualClassSymbol.STRING, new LinkedHashMap<>(
-                Map.of("s", ActualClassSymbol.STRING)
+        defineMethod(ActualClassSymbol.STRING, "concat", ActualClassSymbol.STRING, List.of(
+                new Pair<>("s", ActualClassSymbol.STRING)
         ));
-        defineMethod(ActualClassSymbol.STRING, "substr", ActualClassSymbol.STRING, new LinkedHashMap<>(
-                Map.of("i", ActualClassSymbol.INT, "l", ActualClassSymbol.INT)
+        defineMethod(ActualClassSymbol.STRING, "substr", ActualClassSymbol.STRING, List.of(
+                new Pair<>("i", ActualClassSymbol.INT),
+                new Pair<>("l", ActualClassSymbol.INT)
         ));
     }
 
     private static void defineMethod(ClassSymbol classSymbol, String methodName, ClassSymbol returnSymbol) {
-        defineMethod(classSymbol, methodName, returnSymbol, new LinkedHashMap<>());
+        defineMethod(classSymbol, methodName, returnSymbol, List.of());
     }
 
-    private static void defineMethod(ClassSymbol classSymbol, String methodName, ClassSymbol returnSymbol, LinkedHashMap<String, ClassSymbol> formals) {
+    private static void defineMethod(ClassSymbol classSymbol, String methodName, ClassSymbol returnSymbol, List<Pair<String, ClassSymbol>> formals) {
         var methodSymbol = new MethodSymbol(classSymbol, methodName);
+
+        formals.forEach((p) -> methodSymbol.add(new IdSymbol(p.a).setType(p.b)));
+
         methodSymbol.setType(returnSymbol);
-
-        for (Map.Entry<String, ClassSymbol> entry : formals.entrySet()) {
-            methodSymbol.add(
-                    new IdSymbol(entry.getKey()).setType(entry.getValue())
-            );
-        }
-
         classSymbol.add(methodSymbol);
     }
     
