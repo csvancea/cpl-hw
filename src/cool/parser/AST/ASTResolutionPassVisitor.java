@@ -8,18 +8,35 @@ import org.antlr.v4.runtime.misc.Pair;
 import java.util.Objects;
 
 public class ASTResolutionPassVisitor extends ASTDefaultVisitor<ClassSymbol> {
+    private static ClassSymbol getCurrentClass(Scope scope) {
+        while (!(scope instanceof ClassSymbol)) {
+            scope = scope.getParent();
+        }
+
+        if (((ClassSymbol) scope).isSelfType()) {
+            scope = ((ClassSymbol) scope).getActualType();
+        }
+
+        return (ClassSymbol)scope;
+    }
+
+    private static ClassSymbol resolveSelfTypeToCurrentContextIfNecessary(Scope scope, ClassSymbol selfType) {
+        if (selfType == null)
+            return null;
+
+        if (!selfType.isSelfType())
+            return selfType;
+
+        return getCurrentClass(scope).getSelfType();
+    }
+
     @Override
     public ClassSymbol visit(Id id) {
         var idSymbol = id.getSymbol();
         if (idSymbol == null)
             return null;
 
-        return idSymbol.getType();
-    }
-
-    @Override
-    public ClassSymbol visit(Type type) {
-        return type.getSymbol();
+        return resolveSelfTypeToCurrentContextIfNecessary(id.getScope(), idSymbol.getType());
     }
 
     @Override
@@ -45,14 +62,14 @@ public class ASTResolutionPassVisitor extends ASTDefaultVisitor<ClassSymbol> {
 
     @Override
     public ClassSymbol visit(New new_) {
-        return new_.type.accept(this);
+        return new_.type.getSymbol();
     }
 
     private static ClassSymbol resolveReturnTypeToActualType(ClassSymbol instanceType, ClassSymbol returnType) {
         if (!returnType.isSelfType())
             return returnType;
 
-        return instanceType;
+        return instanceType.getSelfType();
     }
 
     @Override
@@ -102,6 +119,9 @@ public class ASTResolutionPassVisitor extends ASTDefaultVisitor<ClassSymbol> {
                 lookupType = dispatch.type.getSymbol();
             }
         }
+
+        instanceType = resolveSelfTypeToCurrentContextIfNecessary(id.getScope(), instanceType);
+        lookupType = resolveSelfTypeToCurrentContextIfNecessary(id.getScope(), lookupType);
 
         if (!instanceType.isSubclassOf(lookupType)) {
             SymbolTable.error(dispatch.type, "Type " + lookupType + " of static dispatch is not a superclass of type " + instanceType);
@@ -200,25 +220,26 @@ public class ASTResolutionPassVisitor extends ASTDefaultVisitor<ClassSymbol> {
         if (idType == null)
             return null;
 
-        ClassSymbol actualIdType;
-        if (idType.isSelfType())
-            actualIdType = ((IdSymbol)destNode.getScope().lookup("self")).getType().getActualType();
-        else
-            actualIdType = idType;
-
         // Verificare dacă există expresie de inițializare (eg: pentru let)
         if (exprNode == null)
             return idType;
 
+        idType = resolveSelfTypeToCurrentContextIfNecessary(destNode.getScope(), idType);
+
         // TODO: Poate ar trebui ca în caz de eroare (exprType == null)
         //       să întorc de asemenea null
         var exprType = exprNode.accept(this);
-        if (exprType != null && !exprType.isSubclassOf(actualIdType)) {
-            SymbolTable.error(exprNode, errorFormatter.format(exprType, idSymbol, idType));
-            return null;
+
+        if (exprType != null) {
+            exprType = resolveSelfTypeToCurrentContextIfNecessary(destNode.getScope(), exprType);
+
+            if (exprType.getSelfType() != idType.getSelfType() && !exprType.isSubclassOf(idType)) {
+                SymbolTable.error(exprNode, errorFormatter.format(exprType, idSymbol, idType));
+                return null;
+            }
         }
 
-        return idType;
+        return exprType != null ? exprType : idType;
     }
 
     @Override
@@ -232,11 +253,32 @@ public class ASTResolutionPassVisitor extends ASTDefaultVisitor<ClassSymbol> {
 
     @Override
     public ClassSymbol visit(MethodDef methodDef) {
-        return validateAssignment(
-                methodDef.id,
-                methodDef.body,
-                (exprType, idSymbol, idType) -> "Type " + exprType + " of the body of method " + idSymbol + " is incompatible with declared return type " + idType
-        );
+        var destNode = methodDef.id;
+        var exprNode = methodDef.body;
+
+        var idSymbol = destNode.getSymbol();
+        if (idSymbol == null)
+            return null;
+
+        var idType = idSymbol.getType();
+        if (idType == null)
+            return null;
+
+        idType = resolveSelfTypeToCurrentContextIfNecessary(destNode.getScope(), idType);
+
+        // TODO: Poate ar trebui ca în caz de eroare (exprType == null)
+        //       să întorc de asemenea null
+        var exprType = exprNode.accept(this);
+
+        if (exprType != null) {
+            exprType = resolveSelfTypeToCurrentContextIfNecessary(destNode.getScope(), exprType);
+
+            if (!exprType.isSubclassOf(idType)) {
+                SymbolTable.error(exprNode, "Type " + exprType + " of the body of method " + idSymbol + " is incompatible with declared return type " + idType);
+                return null;
+            }
+        }
+        return exprType != null ? exprType : idType;
     }
 
     @Override
