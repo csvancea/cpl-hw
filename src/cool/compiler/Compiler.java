@@ -162,5 +162,11 @@ public class Compiler {
             System.err.println("Compilation halted");
             return;
         }
+
+        var astCodeGenPassVisitor = new ASTCodeGenPassVisitor();
+        var codeGen = ast.accept(astCodeGenPassVisitor);
+
+        if (codeGen != null)
+            System.out.println(codeGen.render());
     }
 }
