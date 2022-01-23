@@ -85,6 +85,23 @@ loadConstant(class, id) ::= <<
     la      $a0 <class>_const<id>
 >>
 
+loadSelf() ::= <<
+    move    $a0 $s0
+>>
+
+dispatch(instance, offset, uniq, filekId, line) ::= <<
+<! TODO: push arguments !>
+<instance>
+    bnez    $a0 dispatch<uniq>
+    la      $a0 str_const<filekId>
+    li      $t1 <line>
+    jal     _dispatch_abort
+dispatch<uniq>:
+    lw      $t1 8($a0)   # dispatch table
+    lw      $t1 <offset>($t1)   # method offset
+    jalr    $t1
+>>
+
 initAttr(code, offset) ::= <<
 <code>
     sw      $a0 <offset>($s0)

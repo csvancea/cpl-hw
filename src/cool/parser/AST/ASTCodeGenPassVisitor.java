@@ -1,10 +1,12 @@
 package cool.parser.AST;
 
+import cool.compiler.Compiler;
 import cool.structures.ActualClassSymbol;
 import cool.structures.ClassSymbol;
 import org.stringtemplate.v4.ST;
 import org.stringtemplate.v4.STGroupFile;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.stream.Collectors;
 
@@ -16,6 +18,12 @@ public class ASTCodeGenPassVisitor extends ASTDefaultVisitor<ST> {
     private static final int MIPS_PROT_OBJ_HEADER_WORD_SIZE = 3;
 
     private static final STGroupFile templates = new STGroupFile("cgen.stg");
+
+    // Număr folosit pentru numerotarea label-urilor (eg: dispatchX, thenBranchX)
+    private int uniqCounter = 0;
+
+    // Fișierul sursă în care este definită clasa pentru care se generează cod la un moment dat.
+    private java.lang.String currentFileName;
 
     private ST classUserRoutinesSection;	// filled directly (through visitor returns)
     private ST classInitRoutinesSection;	// filled collaterally ("global" access)
@@ -171,6 +179,20 @@ public class ASTCodeGenPassVisitor extends ASTDefaultVisitor<ST> {
     }
 
     @Override
+    public ST visit(Id id) {
+        var idSymbol = id.getSymbol();
+
+        if (idSymbol.getName().equals("self")) {
+            return templates.getInstanceOf("loadSelf");
+        }
+        else {
+            // TODO: attributes and local vars
+        }
+
+        return null;
+    }
+
+    @Override
     public ST visit(Int int_) {
         var val = Integer.parseInt(int_.getToken().getText());
         var kId = defineConstant(val);
@@ -201,6 +223,25 @@ public class ASTCodeGenPassVisitor extends ASTDefaultVisitor<ST> {
     }
 
     @Override
+    public ST visit(Dispatch dispatch) {
+        var st = templates.getInstanceOf("dispatch")
+                .add("offset", dispatch.id.getSymbol().getIndex())
+                .add("uniq", uniqCounter++)
+                .add("filekId", defineConstant(currentFileName))
+                .add("line", dispatch.getToken().getLine());
+
+        // TODO: push arguments
+        // dispatch.args.forEach(x -> x.accept(this));
+
+        if (dispatch.instance != null)
+            st.add("instance", dispatch.instance.accept(this));
+        else
+            st.add("instance", templates.getInstanceOf("loadSelf"));
+
+        return st;
+    }
+
+    @Override
     public ST visit(AttributeDef attributeDef) {
         if (attributeDef.initValue != null)
             return templates.getInstanceOf("initAttr")
@@ -220,6 +261,8 @@ public class ASTCodeGenPassVisitor extends ASTDefaultVisitor<ST> {
     @Override
     public ST visit(ClassDef class_) {
         var sym = class_.type.getSymbol();
+
+        currentFileName = new File(Compiler.fileNames.get(class_.getParserRuleContext())).getName();
 
         // Creez codul aferent rutinei de inițializare
         var initRoutine = templates.getInstanceOf("initRoutine")
