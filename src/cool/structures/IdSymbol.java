@@ -1,6 +1,15 @@
 package cool.structures;
 
 public class IdSymbol implements Symbol {
+    public enum DefinitionType {
+        ATTRIBUTE,
+        METHOD,
+        LOCAL,
+        FORMAL
+    }
+
+    private DefinitionType definitionType;
+
     // Fiecare identificator posedă un tip.
     private ClassSymbol type;
 
@@ -13,8 +22,9 @@ public class IdSymbol implements Symbol {
     //   - formal: indexul în cadrul listei de parametri (maybe?)
     private int index = -1;
     
-    public IdSymbol(String name) {
+    public IdSymbol(String name, DefinitionType definitionType) {
         this.name = name;
+        this.definitionType = definitionType;
     }
 
     @Override
@@ -34,6 +44,10 @@ public class IdSymbol implements Symbol {
     
     public ClassSymbol getType() {
         return type;
+    }
+
+    public DefinitionType getDefinitionType() {
+        return definitionType;
     }
 
     public void setIndex(int index) {

@@ -52,10 +52,10 @@ public class SymbolTable {
         ));
 
         // Fake attributes. Necesare pentru calcularea corectă a dimensiunii obiectului prototip pentru generarea de cod
-        ActualClassSymbol.INT.add(new IdSymbol("$int").setType(ActualClassSymbol.OBJECT));
-        ActualClassSymbol.STRING.add(new IdSymbol("$len").setType(ActualClassSymbol.OBJECT));
-        ActualClassSymbol.STRING.add(new IdSymbol("$string").setType(ActualClassSymbol.OBJECT));
-        ActualClassSymbol.BOOL.add(new IdSymbol("$bool").setType(ActualClassSymbol.OBJECT));
+        ActualClassSymbol.INT.add(new IdSymbol("$int", IdSymbol.DefinitionType.ATTRIBUTE).setType(ActualClassSymbol.OBJECT));
+        ActualClassSymbol.STRING.add(new IdSymbol("$len", IdSymbol.DefinitionType.ATTRIBUTE).setType(ActualClassSymbol.OBJECT));
+        ActualClassSymbol.STRING.add(new IdSymbol("$string", IdSymbol.DefinitionType.ATTRIBUTE).setType(ActualClassSymbol.OBJECT));
+        ActualClassSymbol.BOOL.add(new IdSymbol("$bool", IdSymbol.DefinitionType.ATTRIBUTE).setType(ActualClassSymbol.OBJECT));
     }
 
     private static void defineMethod(ClassSymbol classSymbol, String methodName, ClassSymbol returnSymbol) {
@@ -65,7 +65,7 @@ public class SymbolTable {
     private static void defineMethod(ClassSymbol classSymbol, String methodName, ClassSymbol returnSymbol, List<Pair<String, ClassSymbol>> formals) {
         var methodSymbol = new MethodSymbol(classSymbol, methodName);
 
-        formals.forEach((p) -> methodSymbol.add(new IdSymbol(p.a).setType(p.b)));
+        formals.forEach((p) -> methodSymbol.add(new IdSymbol(p.a, IdSymbol.DefinitionType.FORMAL).setType(p.b)));
 
         methodSymbol.setType(returnSymbol);
         classSymbol.add(methodSymbol);

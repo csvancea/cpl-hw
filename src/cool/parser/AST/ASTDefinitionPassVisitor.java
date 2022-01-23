@@ -21,7 +21,7 @@ public class ASTDefinitionPassVisitor extends ASTDefaultVisitor<Void> {
     public Void visit(CaseTest caseTest) {
         var id = caseTest.id;
         var idName = id.getToken().getText();
-        var idSymbol = new IdSymbol(idName);
+        var idSymbol = new IdSymbol(idName, IdSymbol.DefinitionType.LOCAL); // TODO: is this a special definition type?
 
         if (idName.equals("self")) {
             SymbolTable.error(id, "Case variable has illegal name self");
@@ -62,7 +62,7 @@ public class ASTDefinitionPassVisitor extends ASTDefaultVisitor<Void> {
     public Void visit(LocalDef localDef) {
         var id = localDef.id;
         var idName = id.getToken().getText();
-        var idSymbol = new IdSymbol(idName);
+        var idSymbol = new IdSymbol(idName, IdSymbol.DefinitionType.LOCAL);
 
         if (idName.equals("self")) {
             SymbolTable.error(id, "Let variable has illegal name self");
@@ -118,7 +118,7 @@ public class ASTDefinitionPassVisitor extends ASTDefaultVisitor<Void> {
 
         var id = formal.id;
         var idName = id.getToken().getText();
-        var idSymbol = new IdSymbol(idName);
+        var idSymbol = new IdSymbol(idName, IdSymbol.DefinitionType.FORMAL);
 
         if (idName.equals("self")) {
             SymbolTable.error(id, "Method " + methodSymbol + " of class " + classSymbol + " has formal parameter with illegal name self");
@@ -166,7 +166,7 @@ public class ASTDefinitionPassVisitor extends ASTDefaultVisitor<Void> {
 
         var id = attributeDef.id;
         var idName = id.getToken().getText();
-        var idSymbol = new IdSymbol(idName);
+        var idSymbol = new IdSymbol(idName, IdSymbol.DefinitionType.ATTRIBUTE);
 
         if (idName.equals("self")) {
             SymbolTable.error(id, "Class " + classSymbol + " has attribute with illegal name self");

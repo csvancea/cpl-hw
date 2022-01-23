@@ -45,7 +45,7 @@ public class ActualClassSymbol implements ClassSymbol {
         this.name = name;
         this.setParent((ClassSymbol)parent);
 
-        var selfSymbol = new IdSymbol("self");
+        var selfSymbol = new IdSymbol("self", IdSymbol.DefinitionType.ATTRIBUTE);
         selfSymbol.setType(SELF_TYPE);
         this.add(selfSymbol);
         this.add(SELF_TYPE);

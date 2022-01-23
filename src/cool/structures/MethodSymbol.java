@@ -13,7 +13,7 @@ public class MethodSymbol extends IdSymbol implements Scope {
     private final Scope parent;
     
     public MethodSymbol(Scope parent, String name) {
-        super(decorate(name));
+        super(decorate(name), DefinitionType.METHOD);
         this.parent = parent;
     }
 
