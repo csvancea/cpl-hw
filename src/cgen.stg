@@ -1,0 +1,170 @@
+sequence(e) ::= "<e; separator=\"\n\">"
+sequenceSpaced(e) ::= "<e; separator=\"\n\n\">"
+
+wordSymbol(value) ::= <<
+    .word   <value>
+>>
+
+konstantString(newStringkId, stringTag, stringObjSize, intLenkId, ascii) ::= <<
+str_const<newStringkId>:
+    .word   <stringTag>
+    .word   <stringObjSize> <! round up len(ascii)+1 to the nearest multiple of 4 !>
+    .word   String_dispTab
+    .word   int_const<intLenkId>
+    .asciiz "<ascii>"
+    .align  2
+>>
+
+konstantInt(newIntkId, intTag, int) ::= <<
+int_const<newIntkId>:
+    .word   <intTag>
+    .word   4
+    .word   Int_dispTab
+    .word   <int>
+>>
+
+konstantBool(newBoolkId, boolTag, bool) ::= <<
+bool_const<newBoolkId>:
+    .word   <boolTag>
+    .word   4
+    .word   Bool_dispTab
+    .word   <bool>
+>>
+
+nameTabEntry(stringkId) ::= <<
+    .word   str_const<stringkId>
+>>
+
+objTabEntry(class) ::= <<
+    .word   <class>_protObj
+    .word   <class>_init
+>>
+
+protObjBase(class, tag, size) ::= <<
+<class>_protObj:
+    .word   <tag>
+    .word   <size>
+    .word   <class>_dispTab
+>>
+
+protObj(class, tag, size, attrs) ::= <<
+<protObjBase(class, tag, size)>
+<attrs:wordSymbol(); separator="\n">
+>>
+protObjObject(class, tag, size, attrs) ::= <<
+<protObjBase(class, tag, size)>
+>>
+protObjIO(class, tag, size, attrs) ::= <<
+<protObjBase(class, tag, size)>
+>>
+protObjInt(class, tag, size, attrs) ::= <<
+<protObjBase(class, tag, size)>
+    .word   0
+>>
+protObjString(class, tag, size, attrs) ::= <<
+<protObjBase(class, tag, size)>
+    .word   int_const0
+    .asciiz ""
+    .align  2
+>>
+protObjBool(class, tag, size, attrs) ::= <<
+<protObjBase(class, tag, size)>
+    .word   0
+>>
+
+dispTableEntry(entry) ::= <<
+    .word   <entry>
+>>
+
+dispTable(class, entry) ::= <<
+<class>_dispTab:
+<entry:dispTableEntry(); separator="\n">
+>>
+
+initRoutine(class, parentClass) ::= <<
+<class>_init:
+    addiu   $sp $sp -12
+    sw      $fp 12($sp)
+    sw      $s0 8($sp)
+    sw      $ra 4($sp)
+    addiu   $fp $sp 4
+    move    $s0 $a0
+<if(parentClass)>
+    jal     <parentClass>_init
+<endif>
+    <! TODO: attribute init !>
+    move    $a0 $s0
+    lw      $fp 12($sp)
+    lw      $s0 8($sp)
+    lw      $ra 4($sp)
+    addiu   $sp $sp 12
+    jr      $ra
+>>
+
+userRoutine(name, e) ::= <<
+<name>:
+    addiu   $sp $sp -12
+    sw      $fp 12($sp)
+    sw      $s0 8($sp)
+    sw      $ra 4($sp)
+    addiu   $fp $sp 4
+    move    $s0 $a0
+    la      $a0 int_const0
+    lw      $fp 12($sp)
+    lw      $s0 8($sp)
+    lw      $ra 4($sp)
+    addiu   $sp $sp 12
+    jr      $ra
+>>
+
+program(tagInt, tagString, tagBool, kStrings, kInts, kBools, nameTab, objTab, objPrototypes, objDispTables, initRoutines, userRoutines) ::= <<
+.data
+    .align  2
+
+    <! global visible symbols !>
+    .globl  class_nameTab
+    .globl  Int_protObj
+    .globl  String_protObj
+    .globl  bool_const0
+    .globl  bool_const1
+    .globl  Main_protObj
+    .globl  _int_tag
+    .globl  _string_tag
+    .globl  _bool_tag
+
+    <! primitive types tags !>
+_int_tag:
+    .word   <tagInt>
+_string_tag:
+    .word   <tagString>
+_bool_tag:
+    .word   <tagBool>
+
+    <! constants !>
+<kStrings>
+<kInts>
+<kBools>
+
+class_nameTab:
+<nameTab>
+
+class_objTab:
+<objTab>
+
+<objPrototypes>
+
+<objDispTables>
+
+    .globl  heap_start
+heap_start:
+    .word   0
+    .text
+    .globl  Int_init
+    .globl  String_init
+    .globl  Bool_init
+    .globl  Main_init
+    .globl  Main.main
+<initRoutines>
+
+<userRoutines>
+>>
