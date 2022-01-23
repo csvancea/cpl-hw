@@ -93,8 +93,14 @@ loadAttr(offset) ::= <<
     lw      $a0 <offset>($s0)
 >>
 
-dispatch(instance, offset, uniq, filekId, line) ::= <<
-<! TODO: push arguments !>
+pushArgument(arg) ::= <<
+<arg>
+    sw      $a0 0($sp)
+    addiu   $sp $sp -4
+>>
+
+dispatch(instance, offset, args, uniq, filekId, line) ::= <<
+<args:pushArgument()>
 <instance>
     bnez    $a0 dispatch<uniq>
     la      $a0 str_const<filekId>
@@ -143,7 +149,7 @@ userRoutine(name, code) ::= <<
     lw      $fp 12($sp)
     lw      $s0 8($sp)
     lw      $ra 4($sp)
-    addiu   $sp $sp 12
+    addiu   $sp $sp 12 <! TODO: should also pop the arguments (a la win32 __stdcall) !>
     jr      $ra
 >>
 

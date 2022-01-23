@@ -239,13 +239,14 @@ public class ASTCodeGenPassVisitor extends ASTDefaultVisitor<ST> {
     @Override
     public ST visit(Dispatch dispatch) {
         var st = templates.getInstanceOf("dispatch")
-                .add("offset", dispatch.id.getSymbol().getIndex())
+                .add("offset", MIPS_WORD_SIZE * dispatch.id.getSymbol().getIndex())
                 .add("uniq", uniqCounter++)
                 .add("filekId", defineConstant(currentFileName))
                 .add("line", dispatch.getToken().getLine());
 
-        // TODO: push arguments
-        // dispatch.args.forEach(x -> x.accept(this));
+        for (int i = dispatch.args.size() - 1; i >= 0; i--) {
+            st.add("args", dispatch.args.get(i).accept(this));
+        }
 
         if (dispatch.instance != null)
             st.add("instance", dispatch.instance.accept(this));
