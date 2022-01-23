@@ -147,7 +147,10 @@ public class ActualClassSymbol implements ClassSymbol {
             symbols.values().stream()
                     .filter((sym) -> sym instanceof MethodSymbol)
                     .map(sym -> (MethodSymbol)sym)
-                    .forEachOrdered(vmTable::add);
+                    .forEachOrdered(sym -> {
+                        sym.setIndex(vmTable.size());
+                        vmTable.add(sym);
+                    });
 
             return vmTable;
         }
