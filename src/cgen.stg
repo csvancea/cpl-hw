@@ -98,6 +98,15 @@ storeAttr(code, offset) ::= <<
     sw      $a0 <offset>($s0)
 >>
 
+loadFormal(offset) ::= <<
+    lw      $a0 <offset>($fp)
+>>
+
+storeFormal(code, offset) ::= <<
+<code>
+    sw      $a0 <offset>($fp)
+>>
+
 pushArgument(arg) ::= <<
 <arg>
     sw      $a0 0($sp)
@@ -137,7 +146,7 @@ initRoutine(class, parentClass, initCode) ::= <<
     jr      $ra
 >>
 
-userRoutine(name, code) ::= <<
+userRoutine(name, code, stackFixup) ::= <<
 <name>:
     addiu   $sp $sp -12
     sw      $fp 12($sp)
@@ -149,7 +158,7 @@ userRoutine(name, code) ::= <<
     lw      $fp 12($sp)
     lw      $s0 8($sp)
     lw      $ra 4($sp)
-    addiu   $sp $sp 12 <! TODO: should also pop the arguments (a la win32 __stdcall) !>
+    addiu   $sp $sp <stackFixup>
     jr      $ra
 >>
 

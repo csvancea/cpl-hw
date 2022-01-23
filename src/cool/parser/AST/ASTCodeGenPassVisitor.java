@@ -16,7 +16,10 @@ public class ASTCodeGenPassVisitor extends ASTDefaultVisitor<ST> {
     private static final int MIPS_WORD_SIZE = 4;
 
     // Numărul de cuvinte din headerul unui obiect (tag, size, vmtable).
-    private static final int MIPS_PROT_OBJ_HEADER_WORD_SIZE = 3;
+    private static final int MIPS_PROT_OBJ_HEADER_NUM_WORDS = 3;
+
+    // Numărul de cuvinte ce se află între $fp și primul parametru formal ($ra, $s0, $fp).
+    private static final int MIPS_NUM_WORDS_UNTIL_FIRST_FORMAL_FROM_FP = 3;
 
     private static final STGroupFile templates = new STGroupFile("cgen.stg");
 
@@ -116,7 +119,12 @@ public class ASTCodeGenPassVisitor extends ASTDefaultVisitor<ST> {
 
     private int getAttrOffset(IdSymbol sym) {
         assert sym.getDefinitionType() == IdSymbol.DefinitionType.ATTRIBUTE;
-        return (sym.getIndex() + MIPS_PROT_OBJ_HEADER_WORD_SIZE) * MIPS_WORD_SIZE;
+        return (sym.getIndex() + MIPS_PROT_OBJ_HEADER_NUM_WORDS) * MIPS_WORD_SIZE;
+    }
+
+    private int getFormalOffset(IdSymbol sym) {
+        assert sym.getDefinitionType() == IdSymbol.DefinitionType.FORMAL;
+        return (sym.getIndex() + MIPS_NUM_WORDS_UNTIL_FIRST_FORMAL_FROM_FP) * MIPS_WORD_SIZE;
     }
 
     private void createClassLayout(ClassSymbol sym) {
@@ -156,7 +164,7 @@ public class ASTCodeGenPassVisitor extends ASTDefaultVisitor<ST> {
         var protObj = templates.getInstanceOf("protObj" + (sym.isBuiltIn() ? sym : "" ))
                 .add("class", sym.getName())
                 .add("tag", sym.getTag())
-                .add("size", attrTable.size() + MIPS_PROT_OBJ_HEADER_WORD_SIZE)
+                .add("size", attrTable.size() + MIPS_PROT_OBJ_HEADER_NUM_WORDS)
                 .add("attrs", defaultValues);
         classPrototypeObjectsSection.add("e", protObj);
 
@@ -199,6 +207,9 @@ public class ASTCodeGenPassVisitor extends ASTDefaultVisitor<ST> {
             case LOCAL:
                 // TODO: local vars
                 break;
+            case FORMAL:
+                return templates.getInstanceOf("loadFormal")
+                        .add("offset", getFormalOffset(idSymbol));
             default:
                 throw new RuntimeException("DEBUG: shouldn't get here");
         }
@@ -260,6 +271,10 @@ public class ASTCodeGenPassVisitor extends ASTDefaultVisitor<ST> {
             case LOCAL:
                 // TODO: local vars
                 break;
+            case FORMAL:
+                return templates.getInstanceOf("storeFormal")
+                        .add("code", exprCode)
+                        .add("offset", getFormalOffset(idSymbol));
             default:
                 throw new RuntimeException("DEBUG: shouldn't get here");
         }
@@ -301,7 +316,8 @@ public class ASTCodeGenPassVisitor extends ASTDefaultVisitor<ST> {
     public ST visit(MethodDef methodDef) {
         return templates.getInstanceOf("userRoutine")
                 .add("name", methodDef.id.getSymbol().toString())
-                .add("code", methodDef.body.accept(this));
+                .add("code", methodDef.body.accept(this))
+                .add("stackFixup", (methodDef.formals.size() + MIPS_NUM_WORDS_UNTIL_FIRST_FORMAL_FROM_FP) * MIPS_WORD_SIZE);
     }
 
     @Override

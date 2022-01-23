@@ -157,6 +157,11 @@ public class ASTDefinitionPassVisitor extends ASTDefaultVisitor<Void> {
         methodDef.body.accept(this);
         currentScope = currentScope.getParent();
 
+        int formalIdx = 0;
+        for (var formal : idSymbol.getFormals().values()) {
+            formal.setIndex(formalIdx++);
+        }
+
         return null;
     }
 
