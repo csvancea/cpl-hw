@@ -237,6 +237,14 @@ public class ASTCodeGenPassVisitor extends ASTDefaultVisitor<ST> {
     }
 
     @Override
+    public ST visit(Block block) {
+        var st = templates.getInstanceOf("sequence");
+
+        block.exprs.forEach(x -> st.add("e", x.accept(this)));
+        return st;
+    }
+
+    @Override
     public ST visit(Dispatch dispatch) {
         var st = templates.getInstanceOf("dispatch")
                 .add("offset", MIPS_WORD_SIZE * dispatch.id.getSymbol().getIndex())
