@@ -100,7 +100,7 @@ pushArgument(arg) ::= <<
 >>
 
 dispatch(instance, offset, args, uniq, filekId, line) ::= <<
-<args:pushArgument()>
+<args:pushArgument(); separator="\n">
 <instance>
     bnez    $a0 dispatch<uniq>
     la      $a0 str_const<filekId>
