@@ -28,6 +28,12 @@ public class ActualClassSymbol implements ClassSymbol {
     // Adâncimea la care se află clasa curentă față de rădăcină (clasa Object)
     private int depth;
 
+    // Tabela de atribute.
+    private final List<IdSymbol> attrTable = new ArrayList<>();
+
+    // Tabela de dispatch.
+    private final List<MethodSymbol> vmTable = new ArrayList<>();
+
     // Etichetă unică ce descrie clasa curentă.
     private int tag;
 
@@ -104,6 +110,75 @@ public class ActualClassSymbol implements ClassSymbol {
     @Override
     public List<ClassSymbol> getChildren() {
         return this.children;
+    }
+
+    public List<IdSymbol> getAttrTable() {
+        if (!attrTable.isEmpty() || parent == null) {
+            // Tabela este cached sau clasa este Object (nu are atribute)
+            return attrTable;
+        }
+
+        // Tabela clasei curente trebuie să conțină cel puțin toate atributele clasei părinte.
+        attrTable.addAll(parent.getAttrTable());
+
+        for (var sym : symbols.values()) {
+            // Parcurg doar atributele clasei curente
+            if ((sym instanceof MethodSymbol) || sym.getName().equals("self") || sym == SELF_TYPE)
+                continue;
+
+            var currAttr = (IdSymbol)sym;
+
+            // Adaug atributul în tabela de atribute și adnotez simbolul cu indexul acestuia în tabela de atribute
+            currAttr.setIndex(attrTable.size());
+            attrTable.add(currAttr);
+        }
+
+        return attrTable;
+    }
+
+    public List<MethodSymbol> getVMTable() {
+        if (!vmTable.isEmpty()) {
+            // Tabela este cached.
+            return vmTable;
+        }
+
+        if (parent == null) {
+            // Clasa curentă este clasa rădăcină Object. Virtual method table = lista de metode.
+            symbols.values().stream()
+                    .filter((sym) -> sym instanceof MethodSymbol)
+                    .map(sym -> (MethodSymbol)sym)
+                    .forEachOrdered(vmTable::add);
+
+            return vmTable;
+        }
+
+        // Tabela clasei curente trebuie să conțină cel puțin toate metodele clasei părinte.
+        vmTable.addAll(parent.getVMTable());
+
+        for (var sym : symbols.values()) {
+            // Parcurg doar metodele clasei curente
+            if (!(sym instanceof MethodSymbol))
+                continue;
+
+            var currMethod = (MethodSymbol)sym;
+            var overriddenMethod = (MethodSymbol)parent.lookup(currMethod.getName());
+
+            if (overriddenMethod == null) {
+                // Metoda curentă este nouă (nu suprascrie nimic de pe lanțul de moștenire)
+                // Adaug metoda în VMTable și adnotez simbolul cu indexul acesteia în tabela de dispatch
+                currMethod.setIndex(vmTable.size());
+                vmTable.add(currMethod);
+            }
+            else {
+                // Dacă metoda e suprascrisă, oferă-i același vmtable index și suprascrie-o în tabela curentă.
+                int overriddenVMTableIdx = overriddenMethod.getIndex();
+
+                currMethod.setIndex(overriddenVMTableIdx);
+                vmTable.set(overriddenVMTableIdx, currMethod);
+            }
+        }
+
+        return vmTable;
     }
 
     @Override

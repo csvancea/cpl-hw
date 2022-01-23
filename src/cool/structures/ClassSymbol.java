@@ -6,6 +6,9 @@ public interface ClassSymbol extends Symbol, Scope {
     void setParent(ClassSymbol parent);
     List<ClassSymbol> getChildren();
 
+    List<IdSymbol> getAttrTable();
+    List<MethodSymbol> getVMTable();
+
     boolean isPrimitive();
     boolean isSubclassOf(ClassSymbol other);
     int getDepth();

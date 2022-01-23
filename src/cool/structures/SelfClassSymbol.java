@@ -45,6 +45,16 @@ public class SelfClassSymbol implements ClassSymbol {
     }
 
     @Override
+    public List<IdSymbol> getAttrTable() {
+        return actualClass.getAttrTable();
+    }
+
+    @Override
+    public List<MethodSymbol> getVMTable() {
+        return actualClass.getVMTable();
+    }
+
+    @Override
     public boolean isPrimitive() {
         return actualClass.isPrimitive();
     }
