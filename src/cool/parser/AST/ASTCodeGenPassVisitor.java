@@ -3,6 +3,7 @@ package cool.parser.AST;
 import cool.compiler.Compiler;
 import cool.structures.ActualClassSymbol;
 import cool.structures.ClassSymbol;
+import cool.structures.IdSymbol;
 import org.stringtemplate.v4.ST;
 import org.stringtemplate.v4.STGroupFile;
 
@@ -113,6 +114,11 @@ public class ASTCodeGenPassVisitor extends ASTDefaultVisitor<ST> {
         }
     }
 
+    private int getAttrOffset(IdSymbol sym) {
+        assert sym.getDefinitionType() == IdSymbol.DefinitionType.ATTRIBUTE;
+        return (sym.getIndex() + MIPS_PROT_OBJ_HEADER_WORD_SIZE) * MIPS_WORD_SIZE;
+    }
+
     private void createClassLayout(ClassSymbol sym) {
         // Trebuie parcurse clasele în ordinea dată de tag-uri. Din cauza asta nu pot folosi visitorul.
         // Ordinea obligatorie vine din faptul că tabelele claselor (nume/rutine de inițializare) sunt indexate după tag
@@ -185,8 +191,16 @@ public class ASTCodeGenPassVisitor extends ASTDefaultVisitor<ST> {
         if (idSymbol.getName().equals("self")) {
             return templates.getInstanceOf("loadSelf");
         }
-        else {
-            // TODO: attributes and local vars
+
+        switch (idSymbol.getDefinitionType()) {
+            case ATTRIBUTE:
+                return templates.getInstanceOf("loadAttr")
+                        .add("offset", getAttrOffset(idSymbol));
+            case LOCAL:
+                // TODO: local vars
+                break;
+            default:
+                throw new RuntimeException("DEBUG: shouldn't get here");
         }
 
         return null;
@@ -246,7 +260,7 @@ public class ASTCodeGenPassVisitor extends ASTDefaultVisitor<ST> {
         if (attributeDef.initValue != null)
             return templates.getInstanceOf("initAttr")
                     .add("code", attributeDef.initValue.accept(this))
-                    .add("offset", (attributeDef.id.getSymbol().getIndex() + MIPS_PROT_OBJ_HEADER_WORD_SIZE) * MIPS_WORD_SIZE);
+                    .add("offset", getAttrOffset(attributeDef.id.getSymbol()));
 
         return null;
     }

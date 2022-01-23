@@ -89,6 +89,10 @@ loadSelf() ::= <<
     move    $a0 $s0
 >>
 
+loadAttr(offset) ::= <<
+    lw      $a0 <offset>($s0)
+>>
+
 dispatch(instance, offset, uniq, filekId, line) ::= <<
 <! TODO: push arguments !>
 <instance>
