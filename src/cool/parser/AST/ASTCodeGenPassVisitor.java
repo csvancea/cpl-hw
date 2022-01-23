@@ -212,11 +212,9 @@ public class ASTCodeGenPassVisitor extends ASTDefaultVisitor<ST> {
 
     @Override
     public ST visit(MethodDef methodDef) {
-        var st = templates.getInstanceOf("userRoutine")
+        return templates.getInstanceOf("userRoutine")
                 .add("name", methodDef.id.getSymbol().toString())
                 .add("code", methodDef.body.accept(this));
-
-        return st;
     }
 
     @Override
@@ -278,7 +276,7 @@ public class ASTCodeGenPassVisitor extends ASTDefaultVisitor<ST> {
         program.classes.forEach(x -> x.accept(this));
 
         // assembly-ing it all together. HA! get it?
-        var programST = templates.getInstanceOf("program")
+        return templates.getInstanceOf("program")
                 .add("tagInt", ActualClassSymbol.INT.getTag())
                 .add("tagString", ActualClassSymbol.STRING.getTag())
                 .add("tagBool", ActualClassSymbol.BOOL.getTag())
@@ -291,7 +289,5 @@ public class ASTCodeGenPassVisitor extends ASTDefaultVisitor<ST> {
                 .add("objDispTables", classDispTablesSection)
                 .add("initRoutines", classInitRoutinesSection)
                 .add("userRoutines", classUserRoutinesSection);
-
-        return programST;
     }
 }
