@@ -14,11 +14,21 @@
 #	fi
 #done
 
+##
+## Accept both ./tester.sh and ./tester.sh <test num> (eg: ./tester.sh 05)
+##
+
+if [ -z "$1" ]; then
+  SOURCES="./tests/tema3/*.cl"
+else
+  SOURCES="./tests/tema3/$1*.cl"
+fi
+
 # CLASSPATH=.:/usr/local/lib/antlr-4.8-complete.jar
 CLASSPATH=./out/production/Tema/:/usr/local/lib/antlr-4.9.3-complete.jar
 
 passed=0
-for source_file in ./tests/tema3/*.cl; do
+for source_file in $SOURCES; do
 	echo -e "\n`basename $source_file`"
 	java -cp $CLASSPATH cool.compiler.Compiler $source_file > ./tests/tema3/`basename $source_file .cl`.s
 	if [ "$source_file" = "./tests/tema3/32-big.cl" ]; then
