@@ -85,6 +85,11 @@ loadConstant(class, id) ::= <<
     la      $a0 <class>_const<id>
 >>
 
+initAttr(code, offset) ::= <<
+<code>
+    sw      $a0 <offset>($s0)
+>>
+
 initRoutine(class, parentClass, initCode) ::= <<
 <class>_init:
     addiu   $sp $sp -12

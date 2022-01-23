@@ -9,7 +9,12 @@ import java.util.HashMap;
 import java.util.stream.Collectors;
 
 public class ASTCodeGenPassVisitor extends ASTDefaultVisitor<ST> {
+    // Numărul de bytes dintr-un cuvânt.
     private static final int MIPS_WORD_SIZE = 4;
+
+    // Numărul de cuvinte din headerul unui obiect (tag, size, vmtable).
+    private static final int MIPS_PROT_OBJ_HEADER_WORD_SIZE = 3;
+
     private static final STGroupFile templates = new STGroupFile("cgen.stg");
 
     private ST classUserRoutinesSection;	// filled directly (through visitor returns)
@@ -137,7 +142,7 @@ public class ASTCodeGenPassVisitor extends ASTDefaultVisitor<ST> {
         var protObj = templates.getInstanceOf("protObj" + (sym.isBuiltIn() ? sym : "" ))
                 .add("class", sym.getName())
                 .add("tag", sym.getTag())
-                .add("size", attrTable.size() + 3)
+                .add("size", attrTable.size() + MIPS_PROT_OBJ_HEADER_WORD_SIZE)
                 .add("attrs", defaultValues);
         classPrototypeObjectsSection.add("e", protObj);
 
@@ -198,7 +203,9 @@ public class ASTCodeGenPassVisitor extends ASTDefaultVisitor<ST> {
     @Override
     public ST visit(AttributeDef attributeDef) {
         if (attributeDef.initValue != null)
-            return attributeDef.initValue.accept(this);
+            return templates.getInstanceOf("initAttr")
+                    .add("code", attributeDef.initValue.accept(this))
+                    .add("offset", (attributeDef.id.getSymbol().getIndex() + MIPS_PROT_OBJ_HEADER_WORD_SIZE) * MIPS_WORD_SIZE);
 
         return null;
     }
