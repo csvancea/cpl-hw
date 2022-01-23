@@ -123,8 +123,12 @@ public class ASTCodeGenPassVisitor extends ASTDefaultVisitor<ST> {
                 .filter(attr -> !attr.getName().startsWith("$"))
                 .map(attr -> {
                     var type = attr.getType().getActualType();
-                    if (type == ActualClassSymbol.INT || type == ActualClassSymbol.STRING || type == ActualClassSymbol.BOOL)
-                        return type.toString().toLowerCase() + "_const" + type.getTag();
+
+                    if (type == ActualClassSymbol.INT || type == ActualClassSymbol.STRING || type == ActualClassSymbol.BOOL) {
+                        if (type == ActualClassSymbol.STRING)
+                            return "str_const0";
+                        return type.toString().toLowerCase() + "_const0";
+                    }
 
                     return "0";
                 })
@@ -177,7 +181,7 @@ public class ASTCodeGenPassVisitor extends ASTDefaultVisitor<ST> {
         var kId = defineConstant(val);
 
         return templates.getInstanceOf("loadConstant")
-                .add("class", "string")
+                .add("class", "str")
                 .add("id", kId);
     }
 
