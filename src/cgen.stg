@@ -93,6 +93,11 @@ loadAttr(offset) ::= <<
     lw      $a0 <offset>($s0)
 >>
 
+storeAttr(code, offset) ::= <<
+<code>
+    sw      $a0 <offset>($s0)
+>>
+
 pushArgument(arg) ::= <<
 <arg>
     sw      $a0 0($sp)
@@ -110,11 +115,6 @@ dispatch<uniq>:
     lw      $t1 8($a0)   # dispatch table
     lw      $t1 <offset>($t1)   # method offset
     jalr    $t1
->>
-
-initAttr(code, offset) ::= <<
-<code>
-    sw      $a0 <offset>($s0)
 >>
 
 initRoutine(class, parentClass, initCode) ::= <<

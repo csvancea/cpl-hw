@@ -244,6 +244,34 @@ public class ASTCodeGenPassVisitor extends ASTDefaultVisitor<ST> {
         return st;
     }
 
+    private ST generateAssignmentCode(Id destNode, Expression exprNode) {
+        // Verificare dacă există expresie de inițializare (eg: pentru let)
+        if (exprNode == null)
+            return null;
+
+        var idSymbol = destNode.getSymbol();
+        var exprCode = exprNode.accept(this);
+
+        switch (idSymbol.getDefinitionType()) {
+            case ATTRIBUTE:
+                return templates.getInstanceOf("storeAttr")
+                        .add("code", exprCode)
+                        .add("offset", getAttrOffset(idSymbol));
+            case LOCAL:
+                // TODO: local vars
+                break;
+            default:
+                throw new RuntimeException("DEBUG: shouldn't get here");
+        }
+
+        return null;
+    }
+
+    @Override
+    public ST visit(Assign assign) {
+        return generateAssignmentCode(assign.id, assign.expr);
+    }
+
     @Override
     public ST visit(Dispatch dispatch) {
         var st = templates.getInstanceOf("dispatch")
@@ -266,12 +294,7 @@ public class ASTCodeGenPassVisitor extends ASTDefaultVisitor<ST> {
 
     @Override
     public ST visit(AttributeDef attributeDef) {
-        if (attributeDef.initValue != null)
-            return templates.getInstanceOf("initAttr")
-                    .add("code", attributeDef.initValue.accept(this))
-                    .add("offset", getAttrOffset(attributeDef.id.getSymbol()));
-
-        return null;
+        return generateAssignmentCode(attributeDef.id, attributeDef.initValue);
     }
 
     @Override
