@@ -147,12 +147,13 @@ public class ASTCodeGenPassVisitor extends ASTDefaultVisitor<ST> {
         }
         classDispTablesSection.add("e", dispTable);
 
-        // Creez codul aferent rutinei de inițializare
-        var initRoutine = templates.getInstanceOf("initRoutine")
-                .add("class", sym.getName())
-                .add("parentClass", sym.getParent());
-        // TODO: attributes init
-        classInitRoutinesSection.add("e", initRoutine);
+        // Creez codul aferent rutinei de inițializare (doar pentru clasele definite implicit)
+        if (sym.isPrimitive()) {
+            var initRoutine = templates.getInstanceOf("initRoutine")
+                    .add("class", sym.getName())
+                    .add("parentClass", sym.getParent());
+            classInitRoutinesSection.add("e", initRoutine);
+        }
 
         // Parcurg în continuare clasele în ordinea dată de tag indices
         for (var c : sym.getChildren()) {
@@ -161,17 +162,76 @@ public class ASTCodeGenPassVisitor extends ASTDefaultVisitor<ST> {
     }
 
     @Override
+    public ST visit(Int int_) {
+        var val = Integer.parseInt(int_.getToken().getText());
+        var kId = defineConstant(val);
+
+        return templates.getInstanceOf("loadConstant")
+                .add("class", "int")
+                .add("id", kId);
+    }
+
+    @Override
+    public ST visit(String string) {
+        var val = string.getToken().getText();
+        var kId = defineConstant(val);
+
+        return templates.getInstanceOf("loadConstant")
+                .add("class", "string")
+                .add("id", kId);
+    }
+
+    @Override
+    public ST visit(Bool bool_) {
+        var val = Boolean.parseBoolean(bool_.getToken().getText());
+        var kId = defineConstant(val);
+
+        return templates.getInstanceOf("loadConstant")
+                .add("class", "bool")
+                .add("id", kId);
+    }
+
+    @Override
+    public ST visit(AttributeDef attributeDef) {
+        if (attributeDef.initValue != null)
+            return attributeDef.initValue.accept(this);
+
+        return null;
+    }
+
+    @Override
     public ST visit(MethodDef methodDef) {
         var st = templates.getInstanceOf("userRoutine")
                 .add("name", methodDef.id.getSymbol().toString())
-                .add("e", methodDef.body.accept(this));
+                .add("code", methodDef.body.accept(this));
 
         return st;
     }
 
     @Override
     public ST visit(ClassDef class_) {
-        class_.features.forEach(x -> classUserRoutinesSection.add("e", x.accept(this)));
+        var sym = class_.type.getSymbol();
+
+        // Creez codul aferent rutinei de inițializare
+        var initRoutine = templates.getInstanceOf("initRoutine")
+                .add("class", sym.getName())
+                .add("parentClass", sym.getParent());
+
+        // Zona în care este inserat codul generat depinde de tipul de cod
+        for (var feat : class_.features) {
+            var st = feat.accept(this);
+
+            if (feat instanceof AttributeDef) {
+                // Pentru atribute, codul se pune în rutina de inițializare a clasei
+                initRoutine.add("initCode", st);
+            }
+            else {
+                // Pentru metode, se pune în zona de rutine generate de utilizator
+                classUserRoutinesSection.add("e", st);
+            }
+        }
+
+        classInitRoutinesSection.add("e", initRoutine);
         return null;
     }
 

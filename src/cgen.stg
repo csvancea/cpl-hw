@@ -81,7 +81,11 @@ dispTable(class, entry) ::= <<
 <entry:dispTableEntry(); separator="\n">
 >>
 
-initRoutine(class, parentClass) ::= <<
+loadConstant(class, id) ::= <<
+    la      $a0 <class>_const<id>
+>>
+
+initRoutine(class, parentClass, initCode) ::= <<
 <class>_init:
     addiu   $sp $sp -12
     sw      $fp 12($sp)
@@ -92,7 +96,7 @@ initRoutine(class, parentClass) ::= <<
 <if(parentClass)>
     jal     <parentClass>_init
 <endif>
-    <! TODO: attribute init !>
+<initCode>
     move    $a0 $s0
     lw      $fp 12($sp)
     lw      $s0 8($sp)
@@ -101,7 +105,7 @@ initRoutine(class, parentClass) ::= <<
     jr      $ra
 >>
 
-userRoutine(name, e) ::= <<
+userRoutine(name, code) ::= <<
 <name>:
     addiu   $sp $sp -12
     sw      $fp 12($sp)
@@ -109,7 +113,7 @@ userRoutine(name, e) ::= <<
     sw      $ra 4($sp)
     addiu   $fp $sp 4
     move    $s0 $a0
-    la      $a0 int_const0
+<code>
     lw      $fp 12($sp)
     lw      $s0 8($sp)
     lw      $ra 4($sp)
