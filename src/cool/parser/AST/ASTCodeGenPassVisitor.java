@@ -130,7 +130,7 @@ public class ASTCodeGenPassVisitor extends ASTDefaultVisitor<ST> {
                 })
                 .collect(Collectors.toList());
 
-        var protObj = templates.getInstanceOf("protObj" + (sym.isPrimitive() ? sym : "" ))
+        var protObj = templates.getInstanceOf("protObj" + (sym.isBuiltIn() ? sym : "" ))
                 .add("class", sym.getName())
                 .add("tag", sym.getTag())
                 .add("size", attrTable.size() + 3)
@@ -148,7 +148,7 @@ public class ASTCodeGenPassVisitor extends ASTDefaultVisitor<ST> {
         classDispTablesSection.add("e", dispTable);
 
         // Creez codul aferent rutinei de inițializare (doar pentru clasele definite implicit)
-        if (sym.isPrimitive()) {
+        if (sym.isBuiltIn()) {
             var initRoutine = templates.getInstanceOf("initRoutine")
                     .add("class", sym.getName())
                     .add("parentClass", sym.getParent());

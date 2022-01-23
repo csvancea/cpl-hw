@@ -187,6 +187,11 @@ public class ActualClassSymbol implements ClassSymbol {
     }
 
     @Override
+    public boolean isBuiltIn() {
+        return List.of(OBJECT, IO, INT, STRING, BOOL).contains(this);
+    }
+
+    @Override
     public boolean isSubclassOf(ClassSymbol other) {
         if (other.isSelfType()) {
             // Nu are sens T <= SELF_TYPE(c)

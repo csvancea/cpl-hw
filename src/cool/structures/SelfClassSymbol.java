@@ -60,6 +60,11 @@ public class SelfClassSymbol implements ClassSymbol {
     }
 
     @Override
+    public boolean isBuiltIn() {
+        return actualClass.isBuiltIn();
+    }
+
+    @Override
     public boolean isSubclassOf(ClassSymbol other) {
         if (other.isSelfType()) {
             return this == other;

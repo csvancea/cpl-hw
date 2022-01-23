@@ -10,6 +10,7 @@ public interface ClassSymbol extends Symbol, Scope {
     List<MethodSymbol> getVMTable();
 
     boolean isPrimitive();
+    boolean isBuiltIn();
     boolean isSubclassOf(ClassSymbol other);
     int getDepth();
     ClassSymbol getLeastUpperBound(ClassSymbol other);
