@@ -1,5 +1,7 @@
 package cool.structures;
 
+import java.util.List;
+
 public class SelfClassSymbol implements ClassSymbol {
     private final ActualClassSymbol actualClass;
 
@@ -35,6 +37,11 @@ public class SelfClassSymbol implements ClassSymbol {
     @Override
     public void setParent(ClassSymbol parent) {
         actualClass.setParent(parent);
+    }
+
+    @Override
+    public List<ClassSymbol> getChildren() {
+        return actualClass.getChildren();
     }
 
     @Override
@@ -74,5 +81,25 @@ public class SelfClassSymbol implements ClassSymbol {
     @Override
     public ClassSymbol getSelfType() {
         return this;
+    }
+
+    @Override
+    public void setTag(int tag) {
+        actualClass.setTag(tag);
+    }
+
+    @Override
+    public int getTag() {
+        return actualClass.getTag();
+    }
+
+    @Override
+    public void setMaxSubTreeTag(int tag) {
+        actualClass.setMaxSubTreeTag(tag);
+    }
+
+    @Override
+    public int getMaxSubTreeTag() {
+        return actualClass.getMaxSubTreeTag();
     }
 }

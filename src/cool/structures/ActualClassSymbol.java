@@ -22,8 +22,18 @@ public class ActualClassSymbol implements ClassSymbol {
     // Clasa părinte
     private ClassSymbol parent;
 
+    // Clasele descendente direct.
+    private final List<ClassSymbol> children = new LinkedList<>();
+
     // Adâncimea la care se află clasa curentă față de rădăcină (clasa Object)
     private int depth;
+
+    // Etichetă unică ce descrie clasa curentă.
+    private int tag;
+
+    // Eticheta ultimei subclase.
+    // Clasa curentă și toate subclasele sale au tag id în intervalul [tag, maxSubTreeTag)
+    private int maxSubTreeTag;
 
     public ActualClassSymbol(Scope parent, String name) {
         this.name = name;
@@ -84,7 +94,16 @@ public class ActualClassSymbol implements ClassSymbol {
 
         if (parent != null) {
             this.depth = parent.getDepth() + 1;
+
+            if (parent instanceof ActualClassSymbol) {
+                ((ActualClassSymbol) parent).children.add(this);
+            }
         }
+    }
+
+    @Override
+    public List<ClassSymbol> getChildren() {
+        return this.children;
     }
 
     @Override
@@ -163,5 +182,25 @@ public class ActualClassSymbol implements ClassSymbol {
     @Override
     public ClassSymbol getSelfType() {
         return SELF_TYPE;
+    }
+
+    @Override
+    public void setTag(int tag) {
+        this.tag = tag;
+    }
+
+    @Override
+    public int getTag() {
+        return tag;
+    }
+
+    @Override
+    public void setMaxSubTreeTag(int tag) {
+        this.maxSubTreeTag = tag;
+    }
+
+    @Override
+    public int getMaxSubTreeTag() {
+        return maxSubTreeTag;
     }
 }
