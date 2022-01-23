@@ -87,7 +87,7 @@ public class ASTCodeGenPassVisitor extends ASTDefaultVisitor<ST> {
 
             var st = templates.getInstanceOf("konstantBool")
                     .add("newBoolkId", kId)
-                    .add("boolTag", ActualClassSymbol.INT.getTag())
+                    .add("boolTag", ActualClassSymbol.BOOL.getTag())
                     .add("bool", konstant.compareTo(false));
 
             kBoolSection.add("e", st);
