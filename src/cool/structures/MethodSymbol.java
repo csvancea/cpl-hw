@@ -51,7 +51,7 @@ public class MethodSymbol extends IdSymbol implements Scope {
 
     @Override
     public String toString() {
-        return undecorate(getName());
+        return parent.toString() + "." + undecorate(getName());
     }
     
     public Map<String, IdSymbol> getFormals() {

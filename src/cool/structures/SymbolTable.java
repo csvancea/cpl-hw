@@ -50,6 +50,12 @@ public class SymbolTable {
                 new Pair<>("i", ActualClassSymbol.INT),
                 new Pair<>("l", ActualClassSymbol.INT)
         ));
+
+        // Fake attributes. Necesare pentru calcularea corectă a dimensiunii obiectului prototip pentru generarea de cod
+        ActualClassSymbol.INT.add(new IdSymbol("$int").setType(ActualClassSymbol.OBJECT));
+        ActualClassSymbol.STRING.add(new IdSymbol("$len").setType(ActualClassSymbol.OBJECT));
+        ActualClassSymbol.STRING.add(new IdSymbol("$string").setType(ActualClassSymbol.OBJECT));
+        ActualClassSymbol.BOOL.add(new IdSymbol("$bool").setType(ActualClassSymbol.OBJECT));
     }
 
     private static void defineMethod(ClassSymbol classSymbol, String methodName, ClassSymbol returnSymbol) {
