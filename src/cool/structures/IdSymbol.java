@@ -6,6 +6,12 @@ public class IdSymbol implements Symbol {
 
     // Numele simbolului
     private final String name;
+
+    // Sensul depinde de tipul simbolului:
+    //   - metoda: indexul în vmtable
+    //   - atribut: indexul în cadrul listei de atribute
+    //   - formal: indexul în cadrul listei de parametri (maybe?)
+    private int index = -1;
     
     public IdSymbol(String name) {
         this.name = name;
@@ -28,5 +34,13 @@ public class IdSymbol implements Symbol {
     
     public ClassSymbol getType() {
         return type;
+    }
+
+    public void setIndex(int index) {
+        this.index = index;
+    }
+
+    public int getIndex() {
+        return this.index;
     }
 }
