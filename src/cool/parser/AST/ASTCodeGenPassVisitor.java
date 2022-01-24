@@ -1,6 +1,7 @@
 package cool.parser.AST;
 
 import cool.compiler.Compiler;
+import cool.parser.CoolParser;
 import cool.structures.ActualClassSymbol;
 import cool.structures.ClassSymbol;
 import cool.structures.IdSymbol;
@@ -345,6 +346,31 @@ public class ASTCodeGenPassVisitor extends ASTDefaultVisitor<ST> {
     @Override
     public ST visit(Assign assign) {
         return generateAssignmentCode(assign.id, assign.expr, false);
+    }
+
+    @Override
+    public ST visit(Relational rel) {
+        var operator = rel.getToken().getType();
+
+        if (operator == CoolParser.EQUAL) {
+            return templates.getInstanceOf("equalityTest")
+                    .add("e1", rel.left.accept(this))
+                    .add("e2", rel.right.accept(this))
+                    .add("uniq", uniqCounter++);
+        } else {
+            var cmpInstruction = switch(operator) {
+                case CoolParser.LT -> "blt";
+                case CoolParser.LE -> "ble";
+
+                default -> throw new IllegalStateException("Unexpected value: " + operator);
+            };
+
+            return templates.getInstanceOf("compare")
+                    .add("e1", rel.left.accept(this))
+                    .add("e2", rel.right.accept(this))
+                    .add("x", cmpInstruction)
+                    .add("uniq", uniqCounter++);
+        }
     }
 
     @Override

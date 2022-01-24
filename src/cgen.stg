@@ -206,6 +206,36 @@ negateOp(e) ::= <<
     sw      $t1 12($a0)
 >>
 
+equalityTest(e1, e2, uniq) ::= <<
+<e1>
+    sw      $a0 0($sp)
+    addiu   $sp $sp -4
+<e2>
+    lw      $t1 4($sp)
+    addiu   $sp $sp 4
+    move    $t2 $a0
+    la      $a0 bool_const1
+    beq     $t1 $t2 eq<uniq>
+    la      $a1 bool_const0
+    jal     equality_test
+eq<uniq>:
+>>
+
+compare(e1, e2, x, uniq) ::= <<
+<e1>
+    sw      $a0 0($sp)
+    addiu   $sp $sp -4
+<e2>
+    lw      $t1 4($sp)
+    addiu   $sp $sp 4
+    lw      $t1 12($t1)     # int slot
+    lw      $t2 12($a0)     # int slot
+    la      $a0 bool_const1
+    <x>     $t1 $t2 compare<uniq>
+    la      $a0 bool_const0
+compare<uniq>:
+>>
+
 initRoutine(class, parentClass, initCode) ::= <<
 <class>_init:
     addiu   $sp $sp -12
