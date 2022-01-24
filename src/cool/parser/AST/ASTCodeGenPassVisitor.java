@@ -4,6 +4,7 @@ import cool.compiler.Compiler;
 import cool.structures.ActualClassSymbol;
 import cool.structures.ClassSymbol;
 import cool.structures.IdSymbol;
+import cool.structures.MethodSymbol;
 import org.stringtemplate.v4.ST;
 import org.stringtemplate.v4.STGroupFile;
 
@@ -17,6 +18,9 @@ public class ASTCodeGenPassVisitor extends ASTDefaultVisitor<ST> {
 
     // Numărul de cuvinte din headerul unui obiect (tag, size, vmtable).
     private static final int MIPS_PROT_OBJ_HEADER_NUM_WORDS = 3;
+
+    // Numărul de cuvinte ce se află între $fp și prima locație de var. locală.
+    private static final int MIPS_NUM_WORDS_UNTIL_FIRST_LOCAL_FROM_FP = 1;
 
     // Numărul de cuvinte ce se află între $fp și primul parametru formal ($ra, $s0, $fp).
     private static final int MIPS_NUM_WORDS_UNTIL_FIRST_FORMAL_FROM_FP = 3;
@@ -122,9 +126,38 @@ public class ASTCodeGenPassVisitor extends ASTDefaultVisitor<ST> {
         return (sym.getIndex() + MIPS_PROT_OBJ_HEADER_NUM_WORDS) * MIPS_WORD_SIZE;
     }
 
+    private int getLocalOffset(IdSymbol sym) {
+        assert sym.getDefinitionType() == IdSymbol.DefinitionType.LOCAL;
+        return (-sym.getIndex() - MIPS_NUM_WORDS_UNTIL_FIRST_LOCAL_FROM_FP) * MIPS_WORD_SIZE;
+    }
+
     private int getFormalOffset(IdSymbol sym) {
         assert sym.getDefinitionType() == IdSymbol.DefinitionType.FORMAL;
         return (sym.getIndex() + MIPS_NUM_WORDS_UNTIL_FIRST_FORMAL_FROM_FP) * MIPS_WORD_SIZE;
+    }
+
+    private java.lang.String getShortTypeName(ClassSymbol type) {
+        if (type.isPrimitive()) {
+            if (type == ActualClassSymbol.STRING)
+                return "str";
+
+            return type.toString().toLowerCase();
+        }
+
+        return null;
+    }
+
+    private ST generateDefaultValue(ClassSymbol sym) {
+        var shortType = getShortTypeName(sym);
+        if (shortType == null) {
+            return templates.getInstanceOf("loadImm")
+                    .add("imm", 0);
+        }
+        else {
+            return templates.getInstanceOf("loadConstant")
+                    .add("class", shortType)
+                    .add("id", 0);
+        }
     }
 
     private void createClassLayout(ClassSymbol sym) {
@@ -149,15 +182,8 @@ public class ASTCodeGenPassVisitor extends ASTDefaultVisitor<ST> {
         var defaultValues = attrTable.stream()
                 .filter(attr -> !attr.getName().startsWith("$"))
                 .map(attr -> {
-                    var type = attr.getType().getActualType();
-
-                    if (type == ActualClassSymbol.INT || type == ActualClassSymbol.STRING || type == ActualClassSymbol.BOOL) {
-                        if (type == ActualClassSymbol.STRING)
-                            return "str_const0";
-                        return type.toString().toLowerCase() + "_const0";
-                    }
-
-                    return "0";
+                    var shortType = getShortTypeName(attr.getType().getActualType());
+                    return (shortType == null) ? "0" : (shortType + "_const0");
                 })
                 .collect(Collectors.toList());
 
@@ -200,21 +226,15 @@ public class ASTCodeGenPassVisitor extends ASTDefaultVisitor<ST> {
             return templates.getInstanceOf("loadSelf");
         }
 
-        switch (idSymbol.getDefinitionType()) {
-            case ATTRIBUTE:
-                return templates.getInstanceOf("loadAttr")
-                        .add("offset", getAttrOffset(idSymbol));
-            case LOCAL:
-                // TODO: local vars
-                break;
-            case FORMAL:
-                return templates.getInstanceOf("loadFormal")
-                        .add("offset", getFormalOffset(idSymbol));
-            default:
-                throw new RuntimeException("DEBUG: shouldn't get here");
-        }
-
-        return null;
+        return switch (idSymbol.getDefinitionType()) {
+            case ATTRIBUTE -> templates.getInstanceOf("loadAttr")
+                    .add("offset", getAttrOffset(idSymbol));
+            case LOCAL -> templates.getInstanceOf("loadFpRelative")
+                    .add("offset", getLocalOffset(idSymbol));
+            case FORMAL -> templates.getInstanceOf("loadFpRelative")
+                    .add("offset", getFormalOffset(idSymbol));
+            default -> throw new RuntimeException("DEBUG: shouldn't get here");
+        };
     }
 
     @Override
@@ -255,36 +275,47 @@ public class ASTCodeGenPassVisitor extends ASTDefaultVisitor<ST> {
         return st;
     }
 
-    private ST generateAssignmentCode(Id destNode, Expression exprNode) {
+    @Override
+    public ST visit(LocalDef localDef) {
+        return generateAssignmentCode(localDef.id, localDef.initValue, true);
+    }
+
+    @Override
+    public ST visit(Let let) {
+        var st = templates.getInstanceOf("sequence");
+
+        let.vars.forEach(x -> st.add("e", x.accept(this)));
+        st.add("e", let.body.accept(this));
+        return st;
+    }
+
+    private ST generateAssignmentCode(Id destNode, Expression exprNode, boolean generateDefault) {
         // Verificare dacă există expresie de inițializare (eg: pentru let)
-        if (exprNode == null)
+        if (exprNode == null && !generateDefault)
             return null;
 
         var idSymbol = destNode.getSymbol();
-        var exprCode = exprNode.accept(this);
+        var exprCode = (exprNode == null)
+                ? generateDefaultValue(destNode.getSymbol().getType().getActualType())
+                : exprNode.accept(this);
 
-        switch (idSymbol.getDefinitionType()) {
-            case ATTRIBUTE:
-                return templates.getInstanceOf("storeAttr")
-                        .add("code", exprCode)
-                        .add("offset", getAttrOffset(idSymbol));
-            case LOCAL:
-                // TODO: local vars
-                break;
-            case FORMAL:
-                return templates.getInstanceOf("storeFormal")
-                        .add("code", exprCode)
-                        .add("offset", getFormalOffset(idSymbol));
-            default:
-                throw new RuntimeException("DEBUG: shouldn't get here");
-        }
-
-        return null;
+        return switch (idSymbol.getDefinitionType()) {
+            case ATTRIBUTE -> templates.getInstanceOf("storeAttr")
+                    .add("code", exprCode)
+                    .add("offset", getAttrOffset(idSymbol));
+            case LOCAL -> templates.getInstanceOf("storeFpRelative")
+                    .add("code", exprCode)
+                    .add("offset", getLocalOffset(idSymbol));
+            case FORMAL -> templates.getInstanceOf("storeFpRelative")
+                    .add("code", exprCode)
+                    .add("offset", getFormalOffset(idSymbol));
+            default -> throw new RuntimeException("DEBUG: shouldn't get here");
+        };
     }
 
     @Override
     public ST visit(Assign assign) {
-        return generateAssignmentCode(assign.id, assign.expr);
+        return generateAssignmentCode(assign.id, assign.expr, false);
     }
 
     @Override
@@ -309,14 +340,18 @@ public class ASTCodeGenPassVisitor extends ASTDefaultVisitor<ST> {
 
     @Override
     public ST visit(AttributeDef attributeDef) {
-        return generateAssignmentCode(attributeDef.id, attributeDef.initValue);
+        return generateAssignmentCode(attributeDef.id, attributeDef.initValue, false);
     }
 
     @Override
     public ST visit(MethodDef methodDef) {
+        MethodSymbol sym = (MethodSymbol) methodDef.id.getSymbol();
+        int stackForLocals = sym.getTotalLocalDefs() * MIPS_WORD_SIZE;
+
         return templates.getInstanceOf("userRoutine")
-                .add("name", methodDef.id.getSymbol().toString())
+                .add("name", sym.toString())
                 .add("code", methodDef.body.accept(this))
+                .add("locals", (stackForLocals == 0) ? null : stackForLocals)
                 .add("stackFixup", (methodDef.formals.size() + MIPS_NUM_WORDS_UNTIL_FIRST_FORMAL_FROM_FP) * MIPS_WORD_SIZE);
     }
 

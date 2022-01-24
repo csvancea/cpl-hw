@@ -81,6 +81,10 @@ dispTable(class, entry) ::= <<
 <entry:dispTableEntry(); separator="\n">
 >>
 
+loadImm(imm) ::= <<
+    li      $a0 <imm>
+>>
+
 loadConstant(class, id) ::= <<
     la      $a0 <class>_const<id>
 >>
@@ -98,11 +102,11 @@ storeAttr(code, offset) ::= <<
     sw      $a0 <offset>($s0)
 >>
 
-loadFormal(offset) ::= <<
+loadFpRelative(offset) ::= <<
     lw      $a0 <offset>($fp)
 >>
 
-storeFormal(code, offset) ::= <<
+storeFpRelative(code, offset) ::= <<
 <code>
     sw      $a0 <offset>($fp)
 >>
@@ -146,15 +150,21 @@ initRoutine(class, parentClass, initCode) ::= <<
     jr      $ra
 >>
 
-userRoutine(name, code, stackFixup) ::= <<
+userRoutine(name, code, locals, stackFixup) ::= <<
 <name>:
     addiu   $sp $sp -12
     sw      $fp 12($sp)
     sw      $s0 8($sp)
     sw      $ra 4($sp)
     addiu   $fp $sp 4
+<if(locals)>
+    addiu   $sp $sp -<locals>   # locals alloc
+<endif>
     move    $s0 $a0
 <code>
+<if(locals)>
+    addiu   $sp $sp <locals>    # locals free
+<endif>
     lw      $fp 12($sp)
     lw      $s0 8($sp)
     lw      $ra 4($sp)
