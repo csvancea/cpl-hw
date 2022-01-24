@@ -61,8 +61,8 @@ public class MethodSymbol extends IdSymbol implements Scope {
         return symbols;
     }
 
-    public void registerLocalDef() {
-        localDefs++;
+    public int registerLocalDef() {
+        return localDefs++;
     }
 
     public int getTotalLocalDefs() {

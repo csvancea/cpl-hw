@@ -43,8 +43,17 @@ public class ASTDefinitionPassVisitor extends ASTDefaultVisitor<Void> {
 
     @Override
     public Void visit(Case case_) {
+        // Ugly hack: pentru case se rezervă spațiu pe stivă pentru o variabilă. Offset-ul corespunzător este salvat în
+        // toate variabilele introduse de expresia case în ramurile sale. Offset-ul este același pentru fiecare ramură.
+        int localDef = currentMethodSymbol.registerLocalDef();
+
         case_.instance.accept(this);
-        case_.caseTests.forEach(x -> x.accept(this));
+        case_.caseTests.forEach(x -> {
+            x.accept(this);
+            if (x.id.getSymbol() != null) {
+                x.id.getSymbol().setIndex(localDef);
+            }
+        });
         return null;
     }
 
@@ -86,9 +95,7 @@ public class ASTDefinitionPassVisitor extends ASTDefaultVisitor<Void> {
         id.setSymbol(idSymbol);
         id.setScope(currentScope);
 
-        idSymbol.setIndex(currentMethodSymbol.getTotalLocalDefs());
-        currentMethodSymbol.registerLocalDef();
-
+        idSymbol.setIndex(currentMethodSymbol.registerLocalDef());
         return null;
     }
 
