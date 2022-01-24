@@ -236,6 +236,17 @@ compare(e1, e2, x, uniq) ::= <<
 compare<uniq>:
 >>
 
+whileLoop(cond, body, uniq) ::= <<
+while<uniq>:
+<cond>
+    lw      $t1 12($a0)     # bool slot
+    beqz    $t1 endwhile<uniq>
+<body>
+    b       while<uniq>
+endwhile<uniq>:
+    move    $a0 $zero
+>>
+
 initRoutine(class, parentClass, initCode) ::= <<
 <class>_init:
     addiu   $sp $sp -12

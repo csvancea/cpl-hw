@@ -278,6 +278,14 @@ public class ASTCodeGenPassVisitor extends ASTDefaultVisitor<ST> {
     }
 
     @Override
+    public ST visit(While while_) {
+        return templates.getInstanceOf("whileLoop")
+                .add("cond", while_.cond.accept(this))
+                .add("body", while_.body.accept(this))
+                .add("uniq", uniqCounter++);
+    }
+
+    @Override
     public ST visit(Block block) {
         var st = templates.getInstanceOf("sequence");
 
