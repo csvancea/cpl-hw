@@ -289,6 +289,19 @@ public class ASTCodeGenPassVisitor extends ASTDefaultVisitor<ST> {
         return st;
     }
 
+    @Override
+    public ST visit(New new_) {
+        var name = new_.type.getToken().getText();
+
+        if (name.equals("SELF_TYPE")) {
+            return templates.getInstanceOf("newSELF_TYPE");
+        }
+        else {
+            return templates.getInstanceOf("newStatic")
+                    .add("class", name);
+        }
+    }
+
     private ST generateAssignmentCode(Id destNode, Expression exprNode, boolean generateDefault) {
         // Verificare dacă există expresie de inițializare (eg: pentru let)
         if (exprNode == null && !generateDefault)
