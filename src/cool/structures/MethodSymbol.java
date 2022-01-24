@@ -9,7 +9,10 @@ public class MethodSymbol extends IdSymbol implements Scope {
  
     // LinkedHashMap reține ordinea adăugării.
     private final Map<String, IdSymbol> symbols = new LinkedHashMap<>();
-    
+
+    // Reține numărul de variabile locale metodei.
+    private int localDefs = 0;
+
     private final Scope parent;
     
     public MethodSymbol(Scope parent, String name) {
@@ -56,6 +59,14 @@ public class MethodSymbol extends IdSymbol implements Scope {
     
     public Map<String, IdSymbol> getFormals() {
         return symbols;
+    }
+
+    public void registerLocalDef() {
+        localDefs++;
+    }
+
+    public int getTotalLocalDefs() {
+        return localDefs;
     }
 
     // În specificația Cool, metodele și atributele unei clase fac parte din scope-uri lexicale diferite,

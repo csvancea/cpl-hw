@@ -4,6 +4,8 @@ import cool.structures.*;
 
 public class ASTDefinitionPassVisitor extends ASTDefaultVisitor<Void> {
     private Scope currentScope = null;
+    private ClassSymbol currentClassSymbol = null;
+    private MethodSymbol currentMethodSymbol = null;
 
     @Override
     public Void visit(Id id) {
@@ -84,6 +86,9 @@ public class ASTDefinitionPassVisitor extends ASTDefaultVisitor<Void> {
         id.setSymbol(idSymbol);
         id.setScope(currentScope);
 
+        idSymbol.setIndex(currentMethodSymbol.getTotalLocalDefs());
+        currentMethodSymbol.registerLocalDef();
+
         return null;
     }
 
@@ -113,20 +118,17 @@ public class ASTDefinitionPassVisitor extends ASTDefaultVisitor<Void> {
 
     @Override
     public Void visit(Formal formal) {
-        var methodSymbol = (MethodSymbol)currentScope;
-        var classSymbol = (ClassSymbol)currentScope.getParent();
-
         var id = formal.id;
         var idName = id.getToken().getText();
         var idSymbol = new IdSymbol(idName, IdSymbol.DefinitionType.FORMAL);
 
         if (idName.equals("self")) {
-            SymbolTable.error(id, "Method " + methodSymbol + " of class " + classSymbol + " has formal parameter with illegal name self");
+            SymbolTable.error(id, "Method " + currentMethodSymbol + " of class " + currentClassSymbol + " has formal parameter with illegal name self");
             return null;
         }
 
         if (!currentScope.add(idSymbol)) {
-            SymbolTable.error(id, "Method " + methodSymbol + " of class " + classSymbol + " redefines formal parameter " + idName);
+            SymbolTable.error(id, "Method " + currentMethodSymbol + " of class " + currentClassSymbol + " redefines formal parameter " + idName);
             return null;
         }
 
@@ -138,48 +140,45 @@ public class ASTDefinitionPassVisitor extends ASTDefaultVisitor<Void> {
 
     @Override
     public Void visit(MethodDef methodDef) {
-        var classSymbol = (ClassSymbol)currentScope;
-
         var id = methodDef.id;
         var idName = id.getToken().getText();
-        var idSymbol = new MethodSymbol(currentScope, idName);
+        currentMethodSymbol = new MethodSymbol(currentScope, idName);
 
-        if (!currentScope.add(idSymbol)) {
-            SymbolTable.error(id, "Class " + classSymbol + " redefines method " + idName);
+        if (!currentScope.add(currentMethodSymbol)) {
+            SymbolTable.error(id, "Class " + currentClassSymbol + " redefines method " + idName);
             return null;
         }
 
-        id.setSymbol(idSymbol);
+        id.setSymbol(currentMethodSymbol);
         id.setScope(currentScope);
 
-        currentScope = idSymbol;
+        currentScope = currentMethodSymbol;
         methodDef.formals.forEach(x -> x.accept(this));
         methodDef.body.accept(this);
         currentScope = currentScope.getParent();
 
         int formalIdx = 0;
-        for (var formal : idSymbol.getFormals().values()) {
+        for (var formal : currentMethodSymbol.getFormals().values()) {
             formal.setIndex(formalIdx++);
         }
+        currentMethodSymbol = null;
 
         return null;
     }
 
     @Override
     public Void visit(AttributeDef attributeDef) {
-        var classSymbol = (ClassSymbol)currentScope;
-
         var id = attributeDef.id;
         var idName = id.getToken().getText();
         var idSymbol = new IdSymbol(idName, IdSymbol.DefinitionType.ATTRIBUTE);
 
         if (idName.equals("self")) {
-            SymbolTable.error(id, "Class " + classSymbol + " has attribute with illegal name self");
+            SymbolTable.error(id, "Class " + currentClassSymbol + " has attribute with illegal name self");
             return null;
         }
 
         if (!currentScope.add(idSymbol)) {
-            SymbolTable.error(id, "Class " + classSymbol + " redefines attribute " + idName);
+            SymbolTable.error(id, "Class " + currentClassSymbol + " redefines attribute " + idName);
             return null;
         }
 
@@ -202,16 +201,17 @@ public class ASTDefinitionPassVisitor extends ASTDefaultVisitor<Void> {
             return null;
         }
 
-        var classSymbol = new ActualClassSymbol(null, classTypeName);
-        if (!SymbolTable.globals.add(classSymbol)) {
+        currentClassSymbol = new ActualClassSymbol(null, classTypeName);
+        if (!SymbolTable.globals.add(currentClassSymbol)) {
             SymbolTable.error(classType, "Class " + classTypeName + " is redefined");
             return null;
         }
-        classType.setSymbol(classSymbol);
+        classType.setSymbol(currentClassSymbol);
 
-        currentScope = classSymbol;
+        currentScope = currentClassSymbol;
         class_.features.forEach(x -> x.accept(this));
         currentScope = null;
+        currentClassSymbol = null;
 
         return null;
     }
