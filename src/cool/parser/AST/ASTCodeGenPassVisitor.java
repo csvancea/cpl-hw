@@ -204,7 +204,7 @@ public class ASTCodeGenPassVisitor extends ASTDefaultVisitor<ST> {
         // Creez codul aferent tabelei de dispatch
         var dispTable = templates.getInstanceOf("dispTable").add("class", sym.getName());
         for (var m : vmTable) {
-            dispTable.add("entry", m.toString());
+            dispTable.add("entry", m.getFullName());
         }
         classDispTablesSection.add("e", dispTable);
 
@@ -522,7 +522,7 @@ public class ASTCodeGenPassVisitor extends ASTDefaultVisitor<ST> {
         int stackForLocals = sym.getTotalLocalDefs() * MIPS_WORD_SIZE;
 
         return templates.getInstanceOf("userRoutine")
-                .add("name", sym.toString())
+                .add("name", sym.getFullName())
                 .add("code", methodDef.body.accept(this))
                 .add("locals", (stackForLocals == 0) ? null : stackForLocals)
                 .add("stackFixup", (methodDef.formals.size() + MIPS_NUM_WORDS_UNTIL_FIRST_FORMAL_FROM_FP) * MIPS_WORD_SIZE);

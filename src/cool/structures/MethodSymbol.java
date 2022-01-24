@@ -54,6 +54,10 @@ public class MethodSymbol extends IdSymbol implements Scope {
 
     @Override
     public String toString() {
+        return undecorate(getName());
+    }
+
+    public String getFullName() {
         return parent.toString() + "." + undecorate(getName());
     }
     
