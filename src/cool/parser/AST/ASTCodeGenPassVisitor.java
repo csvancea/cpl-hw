@@ -355,6 +355,44 @@ public class ASTCodeGenPassVisitor extends ASTDefaultVisitor<ST> {
     }
 
     @Override
+    public ST visit(Plus plus) {
+        return templates.getInstanceOf("arithmeticOp")
+                .add("e1", plus.left.accept(this))
+                .add("e2", plus.right.accept(this))
+                .add("x", "add");
+    }
+
+    @Override
+    public ST visit(Minus minus) {
+        return templates.getInstanceOf("arithmeticOp")
+                .add("e1", minus.left.accept(this))
+                .add("e2", minus.right.accept(this))
+                .add("x", "sub");
+    }
+
+    @Override
+    public ST visit(Mult mult) {
+        return templates.getInstanceOf("arithmeticOp")
+                .add("e1", mult.left.accept(this))
+                .add("e2", mult.right.accept(this))
+                .add("x", "mul");
+    }
+
+    @Override
+    public ST visit(Div div) {
+        return templates.getInstanceOf("arithmeticOp")
+                .add("e1", div.left.accept(this))
+                .add("e2", div.right.accept(this))
+                .add("x", "div");
+    }
+
+    @Override
+    public ST visit(Negate negate) {
+        return templates.getInstanceOf("negateOp")
+                .add("e", negate.expr.accept(this));
+    }
+
+    @Override
     public ST visit(Dispatch dispatch) {
         var st = templates.getInstanceOf("dispatch")
                 .add("static", (dispatch.type == null) ? null : dispatch.type.getSymbol().getName())
