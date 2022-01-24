@@ -334,6 +334,7 @@ public class ASTCodeGenPassVisitor extends ASTDefaultVisitor<ST> {
     @Override
     public ST visit(Dispatch dispatch) {
         var st = templates.getInstanceOf("dispatch")
+                .add("static", (dispatch.type == null) ? null : dispatch.type.getSymbol().getName())
                 .add("offset", MIPS_WORD_SIZE * dispatch.id.getSymbol().getIndex())
                 .add("uniq", uniqCounter++)
                 .add("filekId", defineConstant(currentFileName))

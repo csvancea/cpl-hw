@@ -117,7 +117,7 @@ pushArgument(arg) ::= <<
     addiu   $sp $sp -4
 >>
 
-dispatch(instance, offset, args, uniq, filekId, line) ::= <<
+dispatch(static, instance, offset, args, uniq, filekId, line) ::= <<
 <args:pushArgument(); separator="\n">
 <instance>
     bnez    $a0 dispatch<uniq>
@@ -125,7 +125,11 @@ dispatch(instance, offset, args, uniq, filekId, line) ::= <<
     li      $t1 <line>
     jal     _dispatch_abort
 dispatch<uniq>:
+<if(static)>
+    la      $t1 <static>_dispTab   # dispatch table
+<else>
     lw      $t1 8($a0)   # dispatch table
+<endif>
     lw      $t1 <offset>($t1)   # method offset
     jalr    $t1
 >>
