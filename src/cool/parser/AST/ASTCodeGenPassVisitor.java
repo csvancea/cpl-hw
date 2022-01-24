@@ -268,6 +268,15 @@ public class ASTCodeGenPassVisitor extends ASTDefaultVisitor<ST> {
     }
 
     @Override
+    public ST visit(If if_) {
+        return templates.getInstanceOf("conditional")
+                .add("cond", if_.cond.accept(this))
+                .add("thenBranch", if_.thenBranch.accept(this))
+                .add("elseBranch", if_.elseBranch.accept(this))
+                .add("uniq", uniqCounter++);
+    }
+
+    @Override
     public ST visit(Block block) {
         var st = templates.getInstanceOf("sequence");
 
@@ -302,6 +311,13 @@ public class ASTCodeGenPassVisitor extends ASTDefaultVisitor<ST> {
         }
     }
 
+    @Override
+    public ST visit(IsVoid isVoid) {
+        return templates.getInstanceOf("isVoid")
+                .add("e", isVoid.instance.accept(this))
+                .add("uniq", uniqCounter++);
+    }
+
     private ST generateAssignmentCode(Id destNode, Expression exprNode, boolean generateDefault) {
         // Verificare dacă există expresie de inițializare (eg: pentru let)
         if (exprNode == null && !generateDefault)
@@ -329,6 +345,13 @@ public class ASTCodeGenPassVisitor extends ASTDefaultVisitor<ST> {
     @Override
     public ST visit(Assign assign) {
         return generateAssignmentCode(assign.id, assign.expr, false);
+    }
+
+    @Override
+    public ST visit(Not not) {
+        return templates.getInstanceOf("not")
+                .add("e", not.expr.accept(this))
+                .add("uniq", uniqCounter++);
     }
 
     @Override

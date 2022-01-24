@@ -155,6 +155,35 @@ newSELF_TYPE() ::= <<
     jalr    $t1
 >>
 
+conditional(cond, thenBranch, elseBranch, uniq) ::= <<
+<cond>
+    lw      $t1 12($a0)     # bool slot
+    beqz    $t1 else<uniq>
+<thenBranch>
+    b       endif<uniq>
+else<uniq>:
+<elseBranch>
+endif<uniq>:
+>>
+
+not(e, uniq) ::= <<
+<e>
+    lw      $t1 12($a0)     # bool slot
+    la      $a0 bool_const1
+    beqz    $t1 not<uniq>
+    la      $a0 bool_const0
+not<uniq>:
+>>
+
+isVoid(e, uniq) ::= <<
+<e>
+    move    $t1 $a0
+    la      $a0 bool_const1
+    beqz    $t1 isvoid<uniq>
+    la      $a0 bool_const0
+isvoid<uniq>:
+>>
+
 initRoutine(class, parentClass, initCode) ::= <<
 <class>_init:
     addiu   $sp $sp -12
