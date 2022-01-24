@@ -247,6 +247,29 @@ endwhile<uniq>:
     move    $a0 $zero
 >>
 
+caseBranch(e, minTag, maxTag, currentCaseUniq, uniq) ::= <<
+    blt     $t1 <minTag> casebranch<uniq>
+    bgt     $t1 <maxTag> casebranch<uniq>
+<e>
+    b       endcase<currentCaseUniq>
+casebranch<uniq>:
+>>
+
+case(e, offset, branches, currentCaseUniq, filekId, line) ::= <<
+<e>
+    bnez    $a0 case<currentCaseUniq>
+    la      $a0 str_const<filekId>
+    li      $t1 <line>
+    jal     _case_abort2
+case<currentCaseUniq>:
+    sw      $a0 <offset>($fp)
+    lw      $t1 0($a0)      # class tag
+<branches>
+    lw      $a0 <offset>($fp)
+    jal     _case_abort
+endcase<currentCaseUniq>:
+>>
+
 initRoutine(class, parentClass, initCode) ::= <<
 <class>_init:
     addiu   $sp $sp -12

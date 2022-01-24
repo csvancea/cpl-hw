@@ -31,6 +31,9 @@ public class ASTCodeGenPassVisitor extends ASTDefaultVisitor<ST> {
     // Număr folosit pentru numerotarea label-urilor (eg: dispatchX, thenBranchX)
     private int uniqCounter = 0;
 
+    // Număr folosit pentru a numerotarea case-urilor. (doar trebuie să fie unic, nu contează valoarea propriu-zisă)
+    private int currentCaseUniq = 0;
+
     // Fișierul sursă în care este definită clasa pentru care se generează cod la un moment dat.
     private java.lang.String currentFileName;
 
@@ -305,6 +308,67 @@ public class ASTCodeGenPassVisitor extends ASTDefaultVisitor<ST> {
         let.vars.forEach(x -> st.add("e", x.accept(this)));
         st.add("e", let.body.accept(this));
         return st;
+    }
+
+    @Override
+    public ST visit(CaseTest caseTest) {
+        var type = caseTest.type.getSymbol();
+
+        return templates.getInstanceOf("caseBranch")
+                .add("e", caseTest.body.accept(this))
+                .add("minTag", type.getTag())
+                .add("maxTag", type.getMaxSubTreeTag() - 1) // bgt
+                .add("currentCaseUniq", currentCaseUniq)
+                .add("uniq", uniqCounter++);
+    }
+
+    @Override
+    public ST visit(Case case_) {
+        /**
+         * case x of
+         *     i : Int => 0;
+         *     m : Main => 0;
+         *     o : Object => 0;
+         * esac
+         *
+         * Cast-ul în Cool trebuie să aleagă ramura cea mai "specializată".
+         *
+         * Cum tag-urile claselor au fost asignate în ordine DFS, atunci toate subclasele unui tip T vor avea tag-uri
+         * în intervalul [T.tag, T.maxTag).
+         *
+         * Așadar, pentru a implementa construcția "case" este nevoie ca:
+         *   0. expresia care se castează să fie nenulă, altfel abort;
+         *   1. ramurile să fie parcurse în ordine descrescătoare dată de tag-ul tipului de pe ramură. Acestă parcurgere
+         *   obligă alegerea ramurii cele mai specializate;
+         *   2. pentru fiecare ramură să se verifice dacă tag-ul lui x se află în intervalul determinat de tipul T
+         *   testat [T.tag, T.maxTag). Dacă da, se alege ramura, dacă nu, se testează următoarea ramură;
+         *   3. Dacă nicio ramură nu se potrivește, atunci se consideră runtime error și se oprește execuția.
+         */
+
+        currentCaseUniq = uniqCounter++;
+
+        // Ugly hack: offset-ul pentru case este memorat în symbol-ul de pe fiecare ramură. Felul în care am scris
+        // regulile parser-ului îmi garantează că există cel puțin un case (get(0) va returna un obiect valid mereu)
+        var offset = getLocalOffset(case_.caseTests.get(0).id.getSymbol());
+        var branches = templates.getInstanceOf("sequence");
+        var st = templates.getInstanceOf("case")
+                .add("e", case_.instance.accept(this))
+                .add("offset", offset)
+                .add("currentCaseUniq", currentCaseUniq)
+                .add("filekId", defineConstant(currentFileName))
+                .add("line", case_.getToken().getLine());
+
+        // Parcurg branch-urile în ordine descrescătoare a tag-urilor claselor.
+        case_.caseTests.stream()
+                .sorted((a, b) -> {
+                    var aTag = a.id.getSymbol().getType().getTag();
+                    var bTag = b.id.getSymbol().getType().getTag();
+
+                    return bTag - aTag;
+                })
+                .forEachOrdered(x -> branches.add("e", x.accept(this)));
+
+        return st.add("branches", branches);
     }
 
     @Override
